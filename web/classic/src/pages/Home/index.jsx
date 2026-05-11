@@ -41,29 +41,46 @@ import {
 import { Link } from 'react-router-dom';
 import NoticeModal from '../../components/layout/NoticeModal';
 import {
-  Moonshot,
-  OpenAI,
-  XAI,
-  Zhipu,
-  Volcengine,
-  Cohere,
   Claude,
-  Gemini,
-  Suno,
-  Minimax,
-  Wenxin,
-  Spark,
-  Qingyan,
-  DeepSeek,
-  Qwen,
-  Midjourney,
-  Grok,
-  AzureAI,
-  Hunyuan,
-  Xinference,
 } from '@lobehub/icons';
 
 const { Text } = Typography;
+
+const REQUEST_QUOTA_TYPE = 0;
+const LEGACY_SITE_URL = 'https://abc.com';
+
+const getMinGroupRatio = (enableGroups = [], groupRatio = {}) => {
+  if (!Array.isArray(enableGroups) || enableGroups.length === 0) return 1;
+  let minRatio = Number.POSITIVE_INFINITY;
+  enableGroups.forEach((group) => {
+    const ratio = groupRatio[group];
+    if (typeof ratio === 'number' && ratio < minRatio) {
+      minRatio = ratio;
+    }
+  });
+  if (minRatio === Number.POSITIVE_INFINITY) return 1;
+  return minRatio;
+};
+
+const formatUSD = (value) => {
+  const n = Number(value || 0);
+  if (n <= 0) return '-';
+  return `$${n
+    .toFixed(n >= 1 ? 3 : 5)
+    .replace(/\.0+$/, '')
+    .replace(/(\.\d*?)0+$/, '$1')}`;
+};
+
+const formatDiscount = (officialInput, officialOutput, inputPrice, outputPrice) => {
+  const officialTotal = Number(officialInput || 0) + Number(officialOutput || 0);
+  const currentTotal = Number(inputPrice || 0) + Number(outputPrice || 0);
+  if (officialTotal <= 0) return '-';
+  const discount = Math.max(
+    0,
+    ((officialTotal - currentTotal) / officialTotal) * 100,
+  );
+  return `${discount.toFixed(1)}%`;
+};
 
 const Home = () => {
   const { t, i18n } = useTranslation();
@@ -79,7 +96,65 @@ const Home = () => {
     statusState?.status?.server_address || `${window.location.origin}`;
   const endpointItems = API_ENDPOINTS.map((e) => ({ value: e }));
   const [endpointIndex, setEndpointIndex] = useState(0);
+  const [modelPricingRows, setModelPricingRows] = useState([]);
+  const [modelPricingLoading, setModelPricingLoading] = useState(false);
   const isChinese = i18n.language.startsWith('zh');
+
+  const fetchModelPricing = async () => {
+    setModelPricingLoading(true);
+    try {
+      const res = await API.get('/api/pricing');
+      const { success, data, group_ratio: groupRatio } = res.data;
+      if (!success || !Array.isArray(data)) {
+        setModelPricingRows([]);
+        return;
+      }
+
+      const rows = data
+        .map((model) => {
+          const minRatio = getMinGroupRatio(
+            model.enable_groups,
+            model.group_ratio || groupRatio || {},
+          );
+          const isPerRequest = model.quota_type === REQUEST_QUOTA_TYPE;
+          const officialInput = isPerRequest
+            ? Number(model.model_price || 0)
+            : Number(model.model_ratio || 0) * 2;
+          const officialOutput = isPerRequest
+            ? Number(model.model_price || 0)
+            : Number(model.completion_ratio || model.model_ratio || 0) * 2;
+          const inputPrice = officialInput * minRatio;
+          const outputPrice = officialOutput * minRatio;
+
+          return {
+            name: model.model_name,
+            inputPrice,
+            outputPrice,
+            officialInput,
+            officialOutput,
+            discount: formatDiscount(
+              officialInput,
+              officialOutput,
+              inputPrice,
+              outputPrice,
+            ),
+          };
+        })
+        .filter((item) => item.officialInput > 0 || item.officialOutput > 0)
+        .sort(
+          (a, b) =>
+            a.inputPrice + a.outputPrice - (b.inputPrice + b.outputPrice),
+        )
+        .slice(0, 12);
+
+      setModelPricingRows(rows);
+    } catch (error) {
+      console.error('获取模型价格失败:', error);
+      setModelPricingRows([]);
+    } finally {
+      setModelPricingLoading(false);
+    }
+  };
 
   const displayHomePageContent = async () => {
     setHomePageContent(localStorage.getItem('home_page_content') || '');
@@ -140,6 +215,10 @@ const Home = () => {
   useEffect(() => {
     displayHomePageContent().then();
   }, []);
+
+  useEffect(() => {
+    fetchModelPricing().then();
+  }, [i18n.language]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -252,83 +331,73 @@ const Home = () => {
                   )}
                 </div>
 
-                {/* 框架兼容性图标 */}
-                <div className='mt-12 md:mt-16 lg:mt-20 w-full'>
-                  <div className='flex items-center mb-6 md:mb-8 justify-center'>
-                    <Text
-                      type='tertiary'
-                      className='text-lg md:text-xl lg:text-2xl font-light'
-                    >
-                      {t('支持众多的大模型供应商')}
-                    </Text>
-                  </div>
-                  <div className='flex flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-5xl mx-auto px-4'>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Moonshot size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <OpenAI size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <XAI size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Zhipu.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Volcengine.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Cohere.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Claude.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Gemini.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Suno size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Minimax.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Wenxin.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Spark.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Qingyan.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <DeepSeek.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Qwen.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Midjourney size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Grok size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <AzureAI.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Hunyuan.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Xinference.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Typography.Text className='!text-lg sm:!text-xl md:!text-2xl lg:!text-3xl font-bold'>
-                        30+
-                      </Typography.Text>
+                <div className='mt-12 w-full max-w-5xl rounded-3xl border border-semi-color-border bg-white/70 p-4 shadow-[0_24px_60px_-40px_rgba(88,64,40,0.35)] backdrop-blur-sm dark:bg-black/20 md:p-6'>
+                  <div className='mb-4 flex items-end justify-between gap-3'>
+                    <div>
+                      <h3 className='mt-2 text-left text-xl font-semibold text-semi-color-text-0 md:text-2xl'>
+                        {t('模型价格对比')}
+                      </h3>
                     </div>
                   </div>
+
+                  <div className='overflow-hidden rounded-2xl border border-semi-color-border'>
+                    <div className='grid grid-cols-3 bg-black/[0.03] px-4 py-3 text-xs font-semibold tracking-wide md:grid-cols-6 md:px-5'>
+                      <span>{t('模型')}</span>
+                      <span className='hidden text-right md:block'>{t('输入')}</span>
+                      <span className='hidden text-right md:block'>{t('输出')}</span>
+                      <span className='text-right'>{t('官方输入')}</span>
+                      <span className='text-right'>{t('官方输出')}</span>
+                      <span className='text-right'>{t('折扣')}</span>
+                    </div>
+
+                    {modelPricingLoading ? (
+                      <div className='px-4 py-5 text-sm text-semi-color-text-2 md:px-5'>
+                        {t('加载中...')}
+                      </div>
+                    ) : modelPricingRows.length === 0 ? (
+                      <div className='px-4 py-5 text-sm text-semi-color-text-2 md:px-5'>
+                        {t('暂无价格数据')}
+                      </div>
+                    ) : (
+                      modelPricingRows.map((item) => (
+                        <div
+                          key={item.name}
+                          className='grid grid-cols-3 items-center border-t border-semi-color-border px-4 py-3 text-sm md:grid-cols-6 md:px-5'
+                        >
+                          <span className='truncate pr-2 text-left font-medium'>
+                            {item.name}
+                          </span>
+                          <span className='hidden text-right font-mono md:block'>
+                            {formatUSD(item.inputPrice)}
+                          </span>
+                          <span className='hidden text-right font-mono md:block'>
+                            {formatUSD(item.outputPrice)}
+                          </span>
+                          <span className='text-right font-mono'>
+                            {formatUSD(item.officialInput)}
+                          </span>
+                          <span className='text-right font-mono'>
+                            {formatUSD(item.officialOutput)}
+                          </span>
+                          <span className='text-right font-mono text-amber-700'>
+                            {item.discount}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className='mt-4 w-full max-w-5xl rounded-2xl border border-semi-color-border bg-amber-50/95 px-4 py-2 text-center text-sm text-amber-900 backdrop-blur-sm dark:bg-amber-900/30 dark:text-amber-200 md:px-5'>
+                  {t('这是新版网站，返回旧版网站请访问')}{' '}
+                  <a
+                    href={LEGACY_SITE_URL}
+                    target='_blank'
+                    rel='noreferrer'
+                    className='font-semibold underline underline-offset-4'
+                  >
+                    {LEGACY_SITE_URL}
+                  </a>
                 </div>
               </div>
             </div>

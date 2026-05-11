@@ -37,12 +37,12 @@ export function Hero(props: HeroProps) {
       {/* Radial gradient background */}
       <div
         aria-hidden
-        className='pointer-events-none absolute inset-0 -z-10 opacity-25 dark:opacity-[0.12]'
+        className='pointer-events-none absolute inset-0 -z-10 opacity-40 dark:opacity-[0.16]'
         style={{
           background: [
-            'radial-gradient(ellipse 60% 50% at 20% 20%, oklch(0.72 0.18 250 / 80%) 0%, transparent 70%)',
-            'radial-gradient(ellipse 50% 40% at 80% 15%, oklch(0.65 0.15 200 / 60%) 0%, transparent 70%)',
-            'radial-gradient(ellipse 40% 35% at 40% 80%, oklch(0.70 0.12 280 / 40%) 0%, transparent 70%)',
+            'radial-gradient(ellipse 62% 50% at 18% 16%, oklch(0.95 0.04 66 / 85%) 0%, transparent 70%)',
+            'radial-gradient(ellipse 52% 40% at 82% 10%, oklch(0.9 0.06 44 / 65%) 0%, transparent 70%)',
+            'radial-gradient(ellipse 40% 34% at 40% 80%, oklch(0.93 0.03 78 / 55%) 0%, transparent 70%)',
           ].join(', '),
         }}
       />
@@ -54,17 +54,17 @@ export function Hero(props: HeroProps) {
 
       <div className='flex max-w-3xl flex-col items-center text-center'>
         <h1
-          className='landing-animate-fade-up text-[clamp(2rem,5.5vw,3.5rem)] leading-[1.15] font-bold tracking-tight'
+          className='landing-animate-fade-up text-[clamp(2rem,5.5vw,3.5rem)] leading-[1.12] font-semibold tracking-tight'
           style={{ animationDelay: '0ms' }}
         >
           {t('Unified API Gateway for')}
           <br />
-          <span className='bg-gradient-to-r from-blue-400 via-violet-400 to-purple-500 bg-clip-text text-transparent'>
+          <span className='bg-gradient-to-r from-amber-700 via-orange-700 to-stone-800 bg-clip-text text-transparent'>
             {t('All Your AI Models')}
           </span>
         </h1>
         <p
-          className='landing-animate-fade-up text-muted-foreground/80 mt-5 max-w-lg text-base leading-relaxed opacity-0 md:text-lg'
+          className='landing-animate-fade-up text-muted-foreground/90 mt-5 max-w-2xl text-base leading-relaxed opacity-0 md:text-lg'
           style={{ animationDelay: '80ms' }}
         >
           {systemName}{' '}
@@ -78,16 +78,16 @@ export function Hero(props: HeroProps) {
         >
           {props.isAuthenticated ? (
             <Button
-              className='group rounded-lg'
-              render={<Link to='/dashboard' />}
-            >
+                className='group rounded-xl'
+                render={<Link to='/dashboard' />}
+              >
               {t('Go to Dashboard')}
               <ArrowRight className='ml-1 size-3.5 transition-transform duration-200 group-hover:translate-x-0.5' />
             </Button>
           ) : (
             <>
               <Button
-                className='group rounded-lg'
+                className='group rounded-xl'
                 render={<Link to='/sign-up' />}
               >
                 {t('Get Started')}
@@ -95,7 +95,7 @@ export function Hero(props: HeroProps) {
               </Button>
               <Button
                 variant='outline'
-                className='border-border/50 hover:border-border hover:bg-muted/50 rounded-lg'
+                className='border-border/70 hover:border-border hover:bg-muted/60 rounded-xl bg-card/70'
                 render={<Link to='/pricing' />}
               >
                 {t('View Pricing')}
@@ -111,6 +111,7 @@ export function Hero(props: HeroProps) {
       >
         <HeroTerminalDemo />
       </div>
+
     </section>
   )
 }
