@@ -40,10 +40,6 @@ import {
 } from '@douyinfe/semi-icons';
 import { Link } from 'react-router-dom';
 import NoticeModal from '../../components/layout/NoticeModal';
-import {
-  Claude,
-} from '@lobehub/icons';
-
 const { Text } = Typography;
 
 const REQUEST_QUOTA_TYPE = 1;
@@ -235,7 +231,7 @@ const Home = () => {
         isMobile={isMobile}
       />
       {homePageContentLoaded && homePageContent === '' ? (
-        <div className='w-full overflow-x-hidden'>
+        <div className='home-claude w-full overflow-x-hidden'>
           {/* Banner 部分 */}
           <div className='w-full border-b border-semi-color-border min-h-[500px] md:min-h-[600px] lg:min-h-[700px] relative overflow-x-hidden'>
             {/* 背景模糊晕染球 */}
@@ -331,7 +327,7 @@ const Home = () => {
                   )}
                 </div>
 
-                <div className='mt-12 w-full max-w-5xl rounded-3xl border border-semi-color-border bg-white/70 p-4 shadow-[0_24px_60px_-40px_rgba(88,64,40,0.35)] backdrop-blur-sm dark:bg-black/20 md:p-6'>
+                <div className='home-pricing-panel mt-12 w-full max-w-5xl rounded-3xl border border-semi-color-border bg-white/70 p-4 shadow-[0_24px_60px_-40px_rgba(88,64,40,0.35)] backdrop-blur-sm dark:bg-black/20 md:p-6'>
                   <div className='mb-4 flex items-end justify-between gap-3'>
                     <div>
                       <h3 className='mt-2 text-left text-xl font-semibold text-semi-color-text-0 md:text-2xl'>
@@ -362,7 +358,7 @@ const Home = () => {
                       modelPricingRows.map((item) => (
                         <div
                           key={item.name}
-                          className='grid grid-cols-3 items-center border-t border-semi-color-border px-4 py-3 text-sm md:grid-cols-6 md:px-5'
+                          className='home-pricing-row grid grid-cols-3 items-center border-t border-semi-color-border px-4 py-3 text-sm md:grid-cols-6 md:px-5'
                         >
                           <span className='truncate pr-2 text-left font-medium'>
                             {item.name}
@@ -388,7 +384,7 @@ const Home = () => {
                   </div>
                 </div>
 
-                <div className='mt-4 w-full max-w-5xl rounded-2xl border border-semi-color-border bg-amber-50/95 px-4 py-2 text-center text-sm text-amber-900 backdrop-blur-sm dark:bg-amber-900/30 dark:text-amber-200 md:px-5'>
+                <div className='home-legacy-notice mt-4 w-full max-w-5xl rounded-2xl border border-semi-color-border bg-amber-50/95 px-4 py-2 text-center text-sm text-amber-900 backdrop-blur-sm dark:bg-amber-900/30 dark:text-amber-200 md:px-5'>
                   {t('这是新版网站，返回旧版网站请访问')}{' '}
                   <a
                     href={LEGACY_SITE_URL}

@@ -31,6 +31,61 @@ body {
   background-color: var(--semi-color-bg-0);
 }
 
+.home-claude {
+  background:
+    radial-gradient(circle at 8% 12%, rgba(246, 236, 221, 0.95), transparent 36%),
+    radial-gradient(circle at 92% 10%, rgba(238, 224, 204, 0.78), transparent 40%),
+    linear-gradient(180deg, #fbf6ef 0%, #f7efe2 55%, #f3e9db 100%);
+}
+
+.home-claude .blur-ball-indigo {
+  background: radial-gradient(circle, rgba(221, 193, 162, 0.42) 0%, rgba(221, 193, 162, 0) 72%);
+}
+
+.home-claude .blur-ball-teal {
+  background: radial-gradient(circle, rgba(204, 176, 142, 0.38) 0%, rgba(204, 176, 142, 0) 70%);
+}
+
+.home-claude .shine-text {
+  background: linear-gradient(96deg, #7e4a2f 0%, #9d5f3a 45%, #6d3f28 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+}
+
+.home-pricing-panel {
+  border-color: rgba(161, 123, 88, 0.26) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 252, 247, 0.93) 0%,
+    rgba(252, 246, 237, 0.9) 100%
+  ) !important;
+  box-shadow: 0 34px 72px -54px rgba(92, 63, 40, 0.55) !important;
+}
+
+.home-pricing-panel .semi-typography {
+  letter-spacing: 0.01em;
+}
+
+.home-pricing-row {
+  transition: background-color 0.2s ease;
+}
+
+.home-pricing-row:hover {
+  background: rgba(156, 111, 76, 0.07);
+}
+
+.home-legacy-notice {
+  border-color: rgba(161, 123, 88, 0.26) !important;
+  background: rgba(255, 246, 232, 0.95) !important;
+  color: #7a4c2b !important;
+}
+
+.home-legacy-notice a {
+  color: #8f522d;
+}
+
 /* 桌面端禁止 body 纵向滚动 - 防止 VChart tooltip 触发页面滚动条 */
 @media (min-width: 768px) {
   body {
