@@ -46,7 +46,7 @@ import {
 
 const { Text } = Typography;
 
-const REQUEST_QUOTA_TYPE = 0;
+const REQUEST_QUOTA_TYPE = 1;
 const LEGACY_SITE_URL = 'https://abc.com';
 
 const getMinGroupRatio = (enableGroups = [], groupRatio = {}) => {
