@@ -18,29 +18,24 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { useContext, useEffect, useState } from 'react';
-import {
-  Button,
-  Typography,
-  Input,
-  ScrollList,
-  ScrollItem,
-} from '@douyinfe/semi-ui';
 import { API, showError, copy, showSuccess } from '../../helpers';
 import { useIsMobile } from '../../hooks/common/useIsMobile';
-import { API_ENDPOINTS } from '../../constants/common.constant';
 import { StatusContext } from '../../context/Status';
-import { useActualTheme } from '../../context/Theme';
 import { marked } from 'marked';
 import { useTranslation } from 'react-i18next';
-import {
-  IconGithubLogo,
-  IconPlay,
-  IconFile,
-  IconCopy,
-} from '@douyinfe/semi-icons';
 import { Link } from 'react-router-dom';
 import NoticeModal from '../../components/layout/NoticeModal';
-const { Text } = Typography;
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import {
+  Play,
+  Github,
+  FileText,
+  Copy,
+  ChevronDown,
+} from 'lucide-react';
 
 const REQUEST_QUOTA_TYPE = 1;
 const LEGACY_SITE_URL = 'https://abc.com';
@@ -81,7 +76,6 @@ const formatDiscount = (officialInput, officialOutput, inputPrice, outputPrice) 
 const Home = () => {
   const { t, i18n } = useTranslation();
   const [statusState] = useContext(StatusContext);
-  const actualTheme = useActualTheme();
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false);
   const [homePageContent, setHomePageContent] = useState('');
   const [noticeVisible, setNoticeVisible] = useState(false);
@@ -90,8 +84,6 @@ const Home = () => {
   const docsLink = statusState?.status?.docs_link || '';
   const serverAddress =
     statusState?.status?.server_address || `${window.location.origin}`;
-  const endpointItems = API_ENDPOINTS.map((e) => ({ value: e }));
-  const [endpointIndex, setEndpointIndex] = useState(0);
   const [modelPricingRows, setModelPricingRows] = useState([]);
   const [modelPricingLoading, setModelPricingLoading] = useState(false);
   const isChinese = i18n.language.startsWith('zh');
@@ -163,17 +155,6 @@ const Home = () => {
       }
       setHomePageContent(content);
       localStorage.setItem('home_page_content', content);
-
-      // 如果内容是 URL，则发送主题模式
-      if (data.startsWith('https://')) {
-        const iframe = document.querySelector('iframe');
-        if (iframe) {
-          iframe.onload = () => {
-            iframe.contentWindow.postMessage({ themeMode: actualTheme }, '*');
-            iframe.contentWindow.postMessage({ lang: i18n.language }, '*');
-          };
-        }
-      }
     } else {
       showError(message);
       setHomePageContent('加载首页内容失败...');
@@ -216,13 +197,6 @@ const Home = () => {
     fetchModelPricing().then();
   }, [i18n.language]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setEndpointIndex((prev) => (prev + 1) % endpointItems.length);
-    }, 3000);
-    return () => clearInterval(timer);
-  }, [endpointItems.length]);
-
   return (
     <div className='w-full overflow-x-hidden'>
       <NoticeModal
@@ -233,7 +207,7 @@ const Home = () => {
       {homePageContentLoaded && homePageContent === '' ? (
         <div className='home-claude w-full overflow-x-hidden'>
           {/* Banner 部分 */}
-          <div className='w-full border-b border-semi-color-border min-h-[500px] md:min-h-[600px] lg:min-h-[700px] relative overflow-x-hidden'>
+          <div className='w-full border-b min-h-[500px] md:min-h-[600px] lg:min-h-[700px] relative overflow-x-hidden bg-gradient-to-b from-background to-muted/20'>
             {/* 背景模糊晕染球 */}
             <div className='blur-ball blur-ball-indigo' />
             <div className='blur-ball blur-ball-teal' />
@@ -241,48 +215,42 @@ const Home = () => {
               {/* 居中内容区 */}
               <div className='flex flex-col items-center justify-center text-center max-w-4xl mx-auto'>
                 <div className='flex flex-col items-center justify-center mb-6 md:mb-8'>
+                  <div className="mb-3">
+                    <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-700/20">
+                      Classic Theme
+                    </span>
+                  </div>
                   <h1
-                    className={`text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-semi-color-text-0 leading-tight ${isChinese ? 'tracking-wide md:tracking-wider' : ''}`}
+                    className={`text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-foreground leading-tight ${isChinese ? 'tracking-wide md:tracking-wider' : ''}`}
                   >
                     <>
                       {t('统一的')}
                       <br />
-                      <span className='shine-text'>{t('大模型接口网关')}</span>
+                      <span className='shine-text bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent'>{t('大模型接口网关')}</span>
                     </>
                   </h1>
-                  <p className='text-base md:text-lg lg:text-xl text-semi-color-text-1 mt-4 md:mt-6 max-w-xl'>
+                  <p className='text-base md:text-lg lg:text-xl text-muted-foreground mt-4 md:mt-6 max-w-xl'>
                     {t('更好的价格，更好的稳定性，只需要将模型基址替换为：')}
                   </p>
                   {/* BASE URL 与端点选择 */}
                   <div className='flex flex-col md:flex-row items-center justify-center gap-4 w-full mt-4 md:mt-6 max-w-md'>
-                    <Input
-                      readonly
-                      value={serverAddress}
-                      className='flex-1 !rounded-full'
-                      size={isMobile ? 'default' : 'large'}
-                      suffix={
-                        <div className='flex items-center gap-2'>
-                          <ScrollList
-                            bodyHeight={32}
-                            style={{ border: 'unset', boxShadow: 'unset' }}
-                          >
-                            <ScrollItem
-                              mode='wheel'
-                              cycled={true}
-                              list={endpointItems}
-                              selectedIndex={endpointIndex}
-                              onSelect={({ index }) => setEndpointIndex(index)}
-                            />
-                          </ScrollList>
-                          <Button
-                            type='primary'
-                            onClick={handleCopyBaseURL}
-                            icon={<IconCopy />}
-                            className='!rounded-full'
-                          />
-                        </div>
-                      }
-                    />
+                    <div className="relative flex-1 w-full">
+                      <Input
+                        readOnly
+                        value={serverAddress}
+                        className='pr-24 rounded-full'
+                      />
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 rounded-full"
+                          onClick={handleCopyBaseURL}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -290,20 +258,18 @@ const Home = () => {
                 <div className='flex flex-row gap-4 justify-center items-center'>
                   <Link to='/console'>
                     <Button
-                      theme='solid'
-                      type='primary'
-                      size={isMobile ? 'default' : 'large'}
-                      className='!rounded-3xl px-8 py-2'
-                      icon={<IconPlay />}
+                      size={isMobile ? 'default' : 'lg'}
+                      className='rounded-full px-8'
                     >
+                      <Play className="mr-2 h-4 w-4" />
                       {t('获取密钥')}
                     </Button>
                   </Link>
                   {isDemoSiteMode && statusState?.status?.version ? (
                     <Button
-                      size={isMobile ? 'default' : 'large'}
-                      className='flex items-center !rounded-3xl px-6 py-2'
-                      icon={<IconGithubLogo />}
+                      variant="outline"
+                      size={isMobile ? 'default' : 'lg'}
+                      className='rounded-full px-6'
                       onClick={() =>
                         window.open(
                           'https://github.com/QuantumNous/new-api',
@@ -311,80 +277,80 @@ const Home = () => {
                         )
                       }
                     >
+                      <Github className="mr-2 h-4 w-4" />
                       {statusState.status.version}
                     </Button>
                   ) : (
                     docsLink && (
                       <Button
-                        size={isMobile ? 'default' : 'large'}
-                        className='flex items-center !rounded-3xl px-6 py-2'
-                        icon={<IconFile />}
+                        variant="outline"
+                        size={isMobile ? 'default' : 'lg'}
+                        className='rounded-full px-6'
                         onClick={() => window.open(docsLink, '_blank')}
                       >
+                        <FileText className="mr-2 h-4 w-4" />
                         {t('文档')}
                       </Button>
                     )
                   )}
                 </div>
 
-                <div className='home-pricing-panel mt-12 w-full max-w-5xl rounded-3xl border border-semi-color-border bg-white/70 p-4 shadow-[0_24px_60px_-40px_rgba(88,64,40,0.35)] backdrop-blur-sm dark:bg-black/20 md:p-6'>
-                  <div className='mb-4 flex items-end justify-between gap-3'>
-                    <div>
-                      <h3 className='mt-2 text-left text-xl font-semibold text-semi-color-text-0 md:text-2xl'>
-                        {t('模型价格对比')}
-                      </h3>
-                    </div>
-                  </div>
-
-                  <div className='overflow-hidden rounded-2xl border border-semi-color-border'>
-                    <div className='grid grid-cols-3 bg-black/[0.03] px-4 py-3 text-xs font-semibold tracking-wide md:grid-cols-6 md:px-5'>
-                      <span>{t('模型')}</span>
-                      <span className='hidden text-right md:block'>{t('输入')}</span>
-                      <span className='hidden text-right md:block'>{t('输出')}</span>
-                      <span className='text-right'>{t('官方输入')}</span>
-                      <span className='text-right'>{t('官方输出')}</span>
-                      <span className='text-right'>{t('折扣')}</span>
-                    </div>
-
-                    {modelPricingLoading ? (
-                      <div className='px-4 py-5 text-sm text-semi-color-text-2 md:px-5'>
-                        {t('加载中...')}
+                {/* 价格对比卡片 */}
+                <Card className="mt-12 w-full max-w-5xl rounded-3xl shadow-lg">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-xl md:text-2xl">{t('模型价格对比')}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className='overflow-hidden rounded-2xl border'>
+                      <div className='grid grid-cols-3 bg-muted/50 px-4 py-3 text-xs font-semibold tracking-wide md:grid-cols-6 md:px-5'>
+                        <span>{t('模型')}</span>
+                        <span className='hidden text-right md:block'>{t('输入')}</span>
+                        <span className='hidden text-right md:block'>{t('输出')}</span>
+                        <span className='text-right'>{t('官方输入')}</span>
+                        <span className='text-right'>{t('官方输出')}</span>
+                        <span className='text-right'>{t('折扣')}</span>
                       </div>
-                    ) : modelPricingRows.length === 0 ? (
-                      <div className='px-4 py-5 text-sm text-semi-color-text-2 md:px-5'>
-                        {t('暂无价格数据')}
-                      </div>
-                    ) : (
-                      modelPricingRows.map((item) => (
-                        <div
-                          key={item.name}
-                          className='home-pricing-row grid grid-cols-3 items-center border-t border-semi-color-border px-4 py-3 text-sm md:grid-cols-6 md:px-5'
-                        >
-                          <span className='truncate pr-2 text-left font-medium'>
-                            {item.name}
-                          </span>
-                          <span className='hidden text-right font-mono md:block'>
-                            {formatUSD(item.inputPrice)}
-                          </span>
-                          <span className='hidden text-right font-mono md:block'>
-                            {formatUSD(item.outputPrice)}
-                          </span>
-                          <span className='text-right font-mono'>
-                            {formatUSD(item.officialInput)}
-                          </span>
-                          <span className='text-right font-mono'>
-                            {formatUSD(item.officialOutput)}
-                          </span>
-                          <span className='text-right font-mono text-amber-700'>
-                            {item.discount}
-                          </span>
+
+                      {modelPricingLoading ? (
+                        <div className='px-4 py-5 text-sm text-muted-foreground md:px-5'>
+                          {t('加载中...')}
                         </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+                      ) : modelPricingRows.length === 0 ? (
+                        <div className='px-4 py-5 text-sm text-muted-foreground md:px-5'>
+                          {t('暂无价格数据')}
+                        </div>
+                      ) : (
+                        modelPricingRows.map((item) => (
+                          <div
+                            key={item.name}
+                            className='grid grid-cols-3 items-center border-t px-4 py-3 text-sm md:grid-cols-6 md:px-5 hover:bg-muted/30 transition-colors'
+                          >
+                            <span className='truncate pr-2 text-left font-medium'>
+                              {item.name}
+                            </span>
+                            <span className='hidden text-right font-mono md:block'>
+                              {formatUSD(item.inputPrice)}
+                            </span>
+                            <span className='hidden text-right font-mono md:block'>
+                              {formatUSD(item.outputPrice)}
+                            </span>
+                            <span className='text-right font-mono'>
+                              {formatUSD(item.officialInput)}
+                            </span>
+                            <span className='text-right font-mono'>
+                              {formatUSD(item.officialOutput)}
+                            </span>
+                            <span className='text-right font-mono text-amber-600 dark:text-amber-400'>
+                              {item.discount}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
 
-                <div className='home-legacy-notice mt-4 w-full max-w-5xl rounded-2xl border border-semi-color-border bg-amber-50/95 px-4 py-2 text-center text-sm text-amber-900 backdrop-blur-sm dark:bg-amber-900/30 dark:text-amber-200 md:px-5'>
+                <div className='mt-4 w-full max-w-5xl rounded-2xl border bg-amber-50/95 px-4 py-2 text-center text-sm text-amber-900 backdrop-blur-sm dark:bg-amber-900/30 dark:text-amber-200 md:px-5'>
                   {t('这是新版网站，返回旧版网站请访问')}{' '}
                   <a
                     href={LEGACY_SITE_URL}

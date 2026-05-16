@@ -34,7 +34,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
       <div className='pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_12%,oklch(0.95_0.03_68/.7),transparent_42%),radial-gradient(circle_at_82%_2%,oklch(0.92_0.05_46/.45),transparent_46%)]' />
       <Link
         to='/'
-        className='absolute top-4 left-4 z-10 flex items-center gap-2 rounded-full bg-card/85 px-3 py-1.5 shadow-sm ring-1 ring-border/70 backdrop-blur-sm transition-opacity hover:opacity-80 sm:top-8 sm:left-8'
+        className='pointer-events-auto absolute top-4 left-4 z-10 flex items-center gap-2 rounded-full bg-card/85 px-3 py-1.5 shadow-sm ring-1 ring-border/70 backdrop-blur-sm transition-opacity hover:opacity-80 sm:top-8 sm:left-8'
       >
         <div className='relative h-8 w-8'>
           {loading ? (
