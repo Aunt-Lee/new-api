@@ -21,7 +21,7 @@ export const pricingCurrencyConfig = {
   // 货币类型：'USD' 或 'CNY'
   currency: 'USD' as 'USD' | 'CNY',
   // 显示符号
-  symbol: '$',
+  symbol: '¥',
 }
 
 /**
@@ -35,52 +35,60 @@ export const pricingCurrencyConfig = {
  */
 export const modelPricingConfig: ModelPricingConfig[] = [
   {
-    name: 'GPT-4o',
-    inputPrice: 2.5,
+    name: '满血claude-opus-4-7',
+    inputPrice: 10,
+    outputPrice: 50,
+    officialInput: 35,
+    officialOutput: 175,
+    discount: '32%',
+  },
+  {
+    name: '满血claude-opus-4-6',
+    inputPrice: 10,
+    outputPrice: 50,
+    officialInput: 35,
+    officialOutput: 175,
+    discount: '32%',
+  },
+  {
+    name: '满血claude-sonnet-4-6',
+    inputPrice: 6,
+    outputPrice: 30,
+    officialInput: 21,
+    officialOutput: 105,
+    discount: '32%',
+  },
+  {
+    name: '满血claude-haiku-4-5',
+    inputPrice: 2,
     outputPrice: 10,
-    officialInput: 5,
-    officialOutput: 15,
-    discount: '50%',
+    officialInput: 7,
+    officialOutput: 35,
+    discount: '17%',
   },
   {
-    name: 'GPT-4o-mini',
-    inputPrice: 0.15,
-    outputPrice: 0.6,
-    officialInput: 0.15,
-    officialOutput: 0.6,
-    discount: '0%',
+    name: '满血gpt-5.5',
+    inputPrice: 5,
+    outputPrice: 30,
+    officialInput: 35,
+    officialOutput: 210,
+    discount: '17%',
   },
   {
-    name: 'Claude 3.5 Sonnet',
-    inputPrice: 3,
+    name: '满血gpt-5.4',
+    inputPrice: 2.5,
     outputPrice: 15,
-    officialInput: 3,
-    officialOutput: 15,
-    discount: '0%',
+    officialInput: 17.5,
+    officialOutput: 105,
+    discount: '17%',
   },
   {
-    name: 'Claude 3 Opus',
-    inputPrice: 15,
-    outputPrice: 75,
-    officialInput: 15,
-    officialOutput: 75,
-    discount: '0%',
-  },
-  {
-    name: 'Gemini 1.5 Pro',
-    inputPrice: 3.5,
-    outputPrice: 10.5,
-    officialInput: 3.5,
-    officialOutput: 10.5,
-    discount: '0%',
-  },
-  {
-    name: 'Gemini 1.5 Flash',
-    inputPrice: 0.35,
-    outputPrice: 0.53,
-    officialInput: 0.35,
-    officialOutput: 0.53,
-    discount: '0%',
+    name: '满血gpt-5.3-codex',
+    inputPrice: 1.8,
+    outputPrice: 14,
+    officialInput: 12.25,
+    officialOutput: 98,
+    discount: '17%',
   },
 ]
 
@@ -91,11 +99,11 @@ export const modelPricingConfig: ModelPricingConfig[] = [
  */
 export const pricingNoticeConfig = {
   // 公告文字内容
-  text: '这是新版网站，返回旧版网站请访问',
+  text: '新网站和通过验证的官方号池合作，注册送2元试用，旧网站请点击',
   // 链接文字
-  linkText: 'https://abc.com',
+  linkText: 'https://newtonrouter.top',
   // 链接地址
-  linkUrl: 'https://abc.com',
+  linkUrl: 'https://newtonrouter.top',
   // 是否显示公告
   enabled: true,
 }

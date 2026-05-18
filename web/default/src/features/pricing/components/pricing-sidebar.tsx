@@ -284,24 +284,30 @@ export function PricingSidebar(props: PricingSidebarProps) {
           options={vendorOptions}
           onChange={props.onVendorChange}
         />
+        {/* 隐藏模型标签筛选
         <FilterSection
           title={t('Model Tags')}
           value={props.tagFilter}
           options={tagOptions}
           onChange={props.onTagChange}
         />
+        */}
+        {/* 隐藏定价类型筛选
         <FilterSection
           title={t('Pricing Type')}
           value={props.quotaTypeFilter}
           options={quotaOptions}
           onChange={props.onQuotaTypeChange}
         />
+        */}
+        {/* 隐藏端点类型筛选
         <FilterSection
           title={t('Endpoint Type')}
           value={props.endpointTypeFilter}
           options={endpointOptions}
           onChange={props.onEndpointTypeChange}
         />
+        */}
       </div>
     </aside>
   )
