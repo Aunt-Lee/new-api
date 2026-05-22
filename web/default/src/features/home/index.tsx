@@ -32,48 +32,26 @@ import {
 } from 'lucide-react'
 import { GitHubLogoIcon } from '@radix-ui/react-icons'
 import { toast } from 'sonner'
-import { modelPricingConfig, pricingNoticeConfig, pricingCurrencyConfig } from './model-pricing-config'
+import { modelPricingConfig, pricingNoticeConfig, pricingCurrencyConfig, pricingHeaderConfig } from './model-pricing-config'
 
 const LEGACY_SITE_URL = 'https://abc.com'
 
 interface ModelPricingRow {
   name: string
-  inputPrice: number
-  outputPrice: number
-  officialInput: number
-  officialOutput: number
+  inputPrice: string
+  outputPrice: string
+  cacheRead: string
+  cacheWrite: string
+  officialInput: string
+  officialOutput: string
   discount: string
+  cacheHit: string
 }
 
-function getMinGroupRatio(enableGroups: string[] = [], groupRatio: Record<string, number> = {}): number {
-  if (!Array.isArray(enableGroups) || enableGroups.length === 0) return 1
-  let minRatio = Number.POSITIVE_INFINITY
-  enableGroups.forEach((group) => {
-    const ratio = groupRatio[group]
-    if (typeof ratio === 'number' && ratio < minRatio) {
-      minRatio = ratio
-    }
-  })
-  if (minRatio === Number.POSITIVE_INFINITY) return 1
-  return minRatio
-}
-
-function formatPrice(value: number): string {
-  const n = Number(value || 0)
-  if (n <= 0) return '-'
+function formatPrice(value: string): string {
+  if (!value || value === '0') return '-'
   const symbol = pricingCurrencyConfig.symbol
-  return `${symbol}${n
-    .toFixed(n >= 1 ? 3 : 5)
-    .replace(/\.0+$/, '')
-    .replace(/(\.\d*?)0+$/, '$1')}`
-}
-
-function formatDiscount(officialInput: number, officialOutput: number, inputPrice: number, outputPrice: number): string {
-  const officialTotal = Number(officialInput || 0) + Number(officialOutput || 0)
-  const currentTotal = Number(inputPrice || 0) + Number(outputPrice || 0)
-  if (officialTotal <= 0) return '-'
-  const discount = Math.max(0, ((officialTotal - currentTotal) / officialTotal) * 100)
-  return `${discount.toFixed(1)}%`
+  return `${symbol}${value}`
 }
 
 export function Home() {
@@ -164,14 +142,14 @@ export function Home() {
                   <h1
                     className={`text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-foreground leading-tight ${isChinese ? 'tracking-wide md:tracking-wider' : ''}`}
                   >
-                    {t('统一的')}
+                    {t('直连官方的')}
                     <br />
                     <span className='shine-text bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent'>
-                      {t('大模型接口网关')}
+                      {t('性价比的接口网关')}
                     </span>
                   </h1>
                   <p className='text-base md:text-lg lg:text-xl text-muted-foreground mt-4 md:mt-6 max-w-xl'>
-                    {t('更好的价格，更好的稳定性，只需要将模型基址替换为：')}
+                    {t('还有更多低价渠道，稳定流畅，只需要将BaseUrl替换为：')}
                   </p>
                   {/* BASE URL */}
                   <div className='flex flex-col md:flex-row items-center justify-center gap-4 w-full mt-4 md:mt-6 max-w-md'>
@@ -228,12 +206,12 @@ export function Home() {
                   <div className="rounded-3xl bg-white/40 dark:bg-white/5 backdrop-blur-md overflow-hidden" style={{ border: 'none', boxShadow: 'none' }}>
                     {/* 表头 */}
                     <div className='grid grid-cols-3 px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider md:grid-cols-6'>
-                      <span className="min-w-[140px] md:min-w-[180px]">{t('模型')}</span>
-                      <span className='hidden text-right md:block'>{t('输入')}</span>
-                      <span className='hidden text-right md:block'>{t('输出')}</span>
-                      <span className='text-right'>{t('官方输入')}</span>
-                      <span className='text-right'>{t('官方输出')}</span>
-                      <span className='text-right'>{t('折扣')}</span>
+                      <span className="min-w-[140px] md:min-w-[180px] text-left">{pricingHeaderConfig.model}</span>
+                      <span className='hidden text-center md:block'>{pricingHeaderConfig.input}</span>
+                      <span className='hidden text-center md:block'>{pricingHeaderConfig.output}</span>
+                      <span className='text-center'>{pricingHeaderConfig.official}</span>
+                      <span className='text-center'>{pricingHeaderConfig.discount}</span>
+                      <span className='text-center'>{pricingHeaderConfig.cacheHit}</span>
                     </div>
 
                     {/* 分隔线 */}
@@ -253,20 +231,20 @@ export function Home() {
                           <span className='truncate pr-2 text-left font-medium text-foreground min-w-[140px] md:min-w-[180px]' title={item.name}>
                             {item.name}
                           </span>
-                          <span className='hidden text-right font-mono text-muted-foreground md:block'>
+                          <span className='hidden text-center font-mono text-muted-foreground md:block'>
                             {formatPrice(item.inputPrice)}
                           </span>
-                          <span className='hidden text-right font-mono text-muted-foreground md:block'>
+                          <span className='hidden text-center font-mono text-muted-foreground md:block'>
                             {formatPrice(item.outputPrice)}
                           </span>
-                          <span className='text-right font-mono text-muted-foreground'>
-                            {formatPrice(item.officialInput)}
+                          <span className='text-center font-mono text-muted-foreground'>
+                            {formatPrice(item.officialInput)} / {formatPrice(item.officialOutput)}
                           </span>
-                          <span className='text-right font-mono text-muted-foreground'>
-                            {formatPrice(item.officialOutput)}
-                          </span>
-                          <span className='text-right font-mono font-semibold text-amber-600 dark:text-amber-400'>
+                          <span className='text-center font-mono font-semibold text-amber-600 dark:text-amber-400'>
                             {item.discount}
+                          </span>
+                          <span className='text-center font-mono font-semibold text-green-600 dark:text-green-400'>
+                            {item.cacheHit}
                           </span>
                         </div>
                       ))

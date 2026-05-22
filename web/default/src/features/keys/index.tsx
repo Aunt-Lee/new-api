@@ -18,6 +18,11 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useTranslation } from 'react-i18next'
 import { SectionPageLayout } from '@/components/layout'
+import { useSystemConfigStore } from '@/stores/system-config-store'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Copy } from 'lucide-react'
+import { toast } from 'sonner'
 import { ApiKeysDialogs } from './components/api-keys-dialogs'
 import { ApiKeysPrimaryButtons } from './components/api-keys-primary-buttons'
 import { ApiKeysProvider } from './components/api-keys-provider'
@@ -25,6 +30,18 @@ import { ApiKeysTable } from './components/api-keys-table'
 
 export function ApiKeys() {
   const { t } = useTranslation()
+  const { config } = useSystemConfigStore()
+  const serverAddress = config.serverAddress || (typeof window !== 'undefined' ? window.location.origin : '')
+
+  const handleCopyBaseURL = async () => {
+    try {
+      await navigator.clipboard.writeText(serverAddress)
+      toast.success(t('已复制到剪切板'))
+    } catch {
+      toast.error(t('复制失败'))
+    }
+  }
+
   return (
     <ApiKeysProvider>
       <SectionPageLayout>
@@ -36,6 +53,24 @@ export function ApiKeys() {
           <ApiKeysPrimaryButtons />
         </SectionPageLayout.Actions>
         <SectionPageLayout.Content>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-sm font-medium text-muted-foreground">BaseUrl:</span>
+            <div className="relative">
+              <Input
+                readOnly
+                value={serverAddress}
+                className='pr-10 h-8 text-sm w-[280px]'
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-8 w-8"
+                onClick={handleCopyBaseURL}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
           <ApiKeysTable />
         </SectionPageLayout.Content>
       </SectionPageLayout>
