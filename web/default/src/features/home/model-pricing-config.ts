@@ -62,7 +62,7 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     officialInput: '35',
     officialOutput: '175',
     discount: '-89%～72%',
-    cacheHit: '>90%',
+    cacheHit: '>92%',
   },
   {
     name: 'claude-opus-4-6',
@@ -73,7 +73,7 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     officialInput: '35',
     officialOutput: '175',
     discount: '-89%～72%',
-    cacheHit: '>90%',
+    cacheHit: '>92%',
   },
   {
     name: 'claude-sonnet-4-6',
@@ -84,7 +84,7 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     officialInput: '21',
     officialOutput: '105',
     discount: '-89%～72%',
-    cacheHit: '>90%',
+    cacheHit: '>92%',
   },
   {
     name: 'claude-haiku-4-5',
@@ -95,7 +95,7 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     officialInput: '7',
     officialOutput: '35',
     discount: '-89%～72%',
-    cacheHit: '>90%',
+    cacheHit: '>92%',
   },
   {
     name: 'gpt-5.5',
@@ -106,7 +106,7 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     officialInput: '35',
     officialOutput: '210',
     discount: '-98%~83%',
-    cacheHit: '>90%',
+    cacheHit: '>92%',
   },
   {
     name: 'gpt-5.4',
@@ -117,7 +117,7 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     officialInput: '17.5',
     officialOutput: '105',
     discount: '-98%~83%',
-    cacheHit: '>90%',
+    cacheHit: '>92%',
   },
   {
     name: 'gpt-5.3-codex',
@@ -128,7 +128,7 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     officialInput: '12.25',
     officialOutput: '98',
     discount: '-98%~83%',
-    cacheHit: '>90%',
+    cacheHit: '>92%',
   },
 ]
 
