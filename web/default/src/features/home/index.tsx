@@ -145,7 +145,7 @@ export function Home() {
                     {t('直连官方的')}
                     <br />
                     <span className='shine-text bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent'>
-                      {t('性价比的接口网关')}
+                      {t('极致性价比接口网关')}
                     </span>
                   </h1>
                   <p className='text-base md:text-lg lg:text-xl text-muted-foreground mt-4 md:mt-6 max-w-xl'>
