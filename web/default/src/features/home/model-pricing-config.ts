@@ -139,11 +139,11 @@ export const modelPricingConfig: ModelPricingConfig[] = [
  */
 export const pricingNoticeConfig = {
   // 公告文字内容
-  text: '新网站和通过验证的官方号池合作，注册送2元试用，旧网站请点击',
+  text: '新用户可以0.01元购买2元试用套餐，7天有效',
   // 链接文字
-  linkText: 'https://newtonrouter.top',
+  //linkText: 'https://newtonrouter.top',
   // 链接地址
-  linkUrl: 'https://newtonrouter.top',
+  //linkUrl: 'https://newtonrouter.top',
   // 是否显示公告
   enabled: true,
 }
