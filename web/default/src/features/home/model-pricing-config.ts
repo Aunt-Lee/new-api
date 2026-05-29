@@ -54,6 +54,17 @@ export const pricingHeaderConfig = {
  */
 export const modelPricingConfig: ModelPricingConfig[] = [
   {
+    name: 'claude-opus-4-8',
+    inputPrice: '2～8.5',
+    outputPrice: '10～42.5',
+    cacheRead: '0.2～0.85',
+    cacheWrite: '2.5～10.6',
+    officialInput: '35',
+    officialOutput: '175',
+    discount: '-89%～72%',
+    cacheHit: '>93%',
+  },
+  {
     name: 'claude-opus-4-7',
     inputPrice: '2～8.5',
     outputPrice: '10～42.5',
