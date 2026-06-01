@@ -18,26 +18,18 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useTranslation } from 'react-i18next'
 import { AnimateInView } from '@/components/animate-in-view'
-import {
-  modelPricingConfig,
-  pricingCurrencyConfig,
-} from '../../model-pricing-config'
+import { modelPricingConfig, pricingCurrencyConfig } from '../../model-pricing-config'
 
 interface ModelPricingProps {
   className?: string
 }
 
-function formatPrice(value: number): string {
+function formatPrice(value?: number): string {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return '-'
+  }
   const { symbol } = pricingCurrencyConfig
   return `${symbol}${value.toFixed(value >= 1 ? 2 : 4).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1')}`
-}
-
-function formatDiscount(officialInput: number, officialOutput: number, inputPrice: number, outputPrice: number): string {
-  const officialTotal = officialInput + officialOutput
-  const currentTotal = inputPrice + outputPrice
-  if (officialTotal <= 0) return '-'
-  const discount = Math.max(0, ((officialTotal - currentTotal) / officialTotal) * 100)
-  return `${discount.toFixed(0)}%`
 }
 
 export function ModelPricing(_props: ModelPricingProps) {
@@ -59,43 +51,27 @@ export function ModelPricing(_props: ModelPricingProps) {
         </AnimateInView>
 
         <div className='border-border/70 bg-card/80 overflow-hidden rounded-2xl border shadow-[0_24px_60px_-44px_color-mix(in_oklch,var(--foreground)_28%,transparent)] backdrop-blur-sm'>
-          <div className='bg-muted/55 grid grid-cols-8 px-5 py-3 text-xs font-semibold tracking-wide uppercase md:px-6'>
+          <div className='bg-muted/55 grid grid-cols-4 px-5 py-3 text-xs font-semibold tracking-wide uppercase md:px-6'>
             <span>{t('Model')}</span>
-            <span className='text-right'>{t('Model Input')}</span>
-            <span className='text-right'>{t('Model Output')}</span>
-            <span className='text-right'>{t('Cache Read')}</span>
-            <span className='text-right'>{t('Cache Write')}</span>
             <span className='text-right'>{t('Official Input')}</span>
             <span className='text-right'>{t('Official Output')}</span>
-            <span className='text-right'>{t('Price Drop')}</span>
+            <span className='text-right'>{t('Cache Hit')}</span>
           </div>
           <div>
             {modelPricingConfig.map((item) => (
               <div
                 key={item.name}
-                className='border-border/45 grid grid-cols-8 items-center border-t px-5 py-3 text-sm md:px-6'
+                className='border-border/45 grid grid-cols-4 items-center border-t px-5 py-3 text-sm md:px-6'
               >
                 <span className='font-medium'>{item.name}</span>
-                <span className='text-right font-mono'>
-                  {formatPrice(item.inputPrice)}
-                </span>
-                <span className='text-right font-mono'>
-                  {formatPrice(item.outputPrice)}
-                </span>
-                <span className='text-right font-mono text-emerald-700 dark:text-emerald-300'>
-                  {formatPrice(item.cacheRead)}
-                </span>
-                <span className='text-right font-mono text-emerald-700 dark:text-emerald-300'>
-                  {formatPrice(item.cacheWrite)}
-                </span>
                 <span className='text-right font-mono text-muted-foreground'>
                   {formatPrice(item.officialInput)}
                 </span>
                 <span className='text-right font-mono text-muted-foreground'>
                   {formatPrice(item.officialOutput)}
                 </span>
-                <span className='text-right font-mono text-amber-700 dark:text-amber-300'>
-                  {formatDiscount(item.officialInput, item.officialOutput, item.inputPrice, item.outputPrice)}
+                <span className='text-right font-mono text-emerald-700 dark:text-emerald-300'>
+                  {item.cacheHit || '-'}
                 </span>
               </div>
             ))}

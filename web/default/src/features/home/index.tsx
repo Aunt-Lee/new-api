@@ -16,10 +16,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { formatBillingCurrencyFromUSD } from '@/lib/currency'
 import { useSystemConfigStore } from '@/stores/system-config-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,31 +29,159 @@ import { PublicLayout } from '@/components/layout'
 import { Footer } from '@/components/layout/components/footer'
 import {
   Play,
-  FileText,
   Copy,
 } from 'lucide-react'
 import { GitHubLogoIcon } from '@radix-ui/react-icons'
 import { toast } from 'sonner'
-import { modelPricingConfig, pricingNoticeConfig, pricingCurrencyConfig, pricingHeaderConfig } from './model-pricing-config'
-
-const LEGACY_SITE_URL = 'https://abc.com'
+import { getPricing } from '@/features/pricing/api'
+import { QUOTA_TYPE_VALUES } from '@/features/pricing/constants'
+import type { PricingModel } from '@/features/pricing/types'
+import { modelPricingConfig, pricingNoticeConfig, pricingHeaderConfig } from './model-pricing-config'
 
 interface ModelPricingRow {
   name: string
   inputPrice: string
   outputPrice: string
-  cacheRead: string
-  cacheWrite: string
   officialInput: string
   officialOutput: string
   discount: string
   cacheHit: string
 }
 
-function formatPrice(value: string): string {
-  if (!value || value === '0') return '-'
-  const symbol = pricingCurrencyConfig.symbol
-  return `${symbol}${value}`
+interface HomePricingResponse {
+  data?: PricingModel[]
+  group_ratio?: Record<string, number>
+  usable_group?: Record<string, { desc: string; ratio: number }>
+}
+
+function hasNumber(value: number | null | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+function formatPrice(value: number | null | undefined): string {
+  if (!hasNumber(value) || value <= 0) return '-'
+  return formatBillingCurrencyFromUSD(value, {
+    digitsLarge: 4,
+    digitsSmall: 6,
+    abbreviate: false,
+  })
+}
+
+function getModelUsableGroupRatios(
+  model: PricingModel,
+  groupRatios: Record<string, number>,
+  usableGroups: Record<string, { desc: string; ratio: number }>
+): number[] {
+  const groups = Array.isArray(model.enable_groups) ? model.enable_groups : []
+  const usableRatios: number[] = []
+
+  for (const group of groups) {
+    if (!(group in usableGroups)) continue
+    const ratio = groupRatios[group]
+    if (hasNumber(ratio) && ratio > 0) {
+      usableRatios.push(ratio)
+    }
+  }
+
+  return usableRatios.length > 0 ? usableRatios : [1]
+}
+
+function getPriceRangeUSD(
+  model: PricingModel,
+  groupRatios: Record<string, number>,
+  usableGroups: Record<string, { desc: string; ratio: number }>,
+  getValue: (base: number, pricingModel: PricingModel) => number
+): { min: number; max: number } | null {
+  if (model.quota_type !== QUOTA_TYPE_VALUES.TOKEN) return null
+  const ranges = getModelUsableGroupRatios(model, groupRatios, usableGroups)
+    .map((ratio) => {
+      const base = model.model_ratio * 2 * ratio
+      return getValue(base, model)
+    })
+    .filter((value) => Number.isFinite(value) && value > 0)
+
+  if (ranges.length === 0) return null
+
+  return {
+    min: Math.min(...ranges),
+    max: Math.max(...ranges),
+  }
+}
+
+function getInputPriceRangeUSD(
+  model: PricingModel,
+  groupRatios: Record<string, number>,
+  usableGroups: Record<string, { desc: string; ratio: number }>
+): { min: number; max: number } | null {
+  return getPriceRangeUSD(model, groupRatios, usableGroups, (base) => base)
+}
+
+function getOutputPriceRangeUSD(
+  model: PricingModel,
+  groupRatios: Record<string, number>,
+  usableGroups: Record<string, { desc: string; ratio: number }>
+): { min: number; max: number } | null {
+  return getPriceRangeUSD(
+    model,
+    groupRatios,
+    usableGroups,
+    (base, pricingModel) => base * pricingModel.completion_ratio
+  )
+}
+
+function formatPriceRange(
+  range: { min: number; max: number } | null
+): string {
+  if (!range) return '-'
+  if (Math.abs(range.min - range.max) < 0.000001) {
+    return formatPrice(range.min)
+  }
+  return `${formatPrice(range.min)}~${formatPrice(range.max)}`
+}
+
+function getDiscountPercent(actual: number, official: number): number | null {
+  if (!hasNumber(actual) || !hasNumber(official) || official <= 0) return null
+  return (1 - actual / official) * 100
+}
+
+function formatDiscountPercent(value: number | null): string {
+  if (!hasNumber(value)) return '-'
+  const rounded = Math.round(value)
+  if (rounded > 0) return `-${rounded}%`
+  if (rounded < 0) return `+${Math.abs(rounded)}%`
+  return '0%'
+}
+
+function formatUnsignedDiscountPercent(value: number | null): string {
+  if (!hasNumber(value)) return '-'
+  return `${Math.abs(Math.round(value))}%`
+}
+
+function formatDiscountRange(
+  inputRange: { min: number; max: number } | null,
+  officialInput: number | null | undefined
+): string {
+  const values = [
+    inputRange && hasNumber(officialInput)
+      ? getDiscountPercent(inputRange.min, officialInput)
+      : null,
+    inputRange && hasNumber(officialInput)
+      ? getDiscountPercent(inputRange.max, officialInput)
+      : null,
+  ].filter(hasNumber)
+
+  if (values.length === 0) return '-'
+
+  const minValue = Math.min(...values)
+  const maxValue = Math.max(...values)
+
+  if (Math.abs(minValue - maxValue) < 0.001) {
+    return formatDiscountPercent(maxValue)
+  }
+
+  const first = formatDiscountPercent(maxValue)
+  const second = formatUnsignedDiscountPercent(minValue)
+  return `${first}~${second}`
 }
 
 export function Home() {
@@ -59,11 +189,54 @@ export function Home() {
   const { config } = useSystemConfigStore()
   const [homePageContent, setHomePageContent] = useState('')
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false)
-  const [modelPricingRows] = useState(() => modelPricingConfig)
   const isChinese = i18n.language.startsWith('zh')
   const isDemoSiteMode = config.demoSiteEnabled || false
-  const docsLink = config.docsLink || ''
   const serverAddress = config.serverAddress || (typeof window !== 'undefined' ? window.location.origin : '')
+  const { data: pricingData } = useQuery<HomePricingResponse>({
+    queryKey: ['home-pricing'],
+    queryFn: getPricing,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const modelPricingRows = useMemo<ModelPricingRow[]>(() => {
+    const pricingModels = pricingData?.data || []
+    const groupRatios = pricingData?.group_ratio || {}
+    const usableGroups = pricingData?.usable_group || {}
+    const modelMap = new Map(pricingModels.map((model) => [model.model_name, model]))
+
+    return modelPricingConfig
+      .map((configItem) => {
+        const model = modelMap.get(configItem.name)
+        if (!model || model.quota_type !== QUOTA_TYPE_VALUES.TOKEN) {
+          return null
+        }
+
+        const inputPriceRange = getInputPriceRangeUSD(
+          model,
+          groupRatios,
+          usableGroups
+        )
+        const outputPriceRange = getOutputPriceRangeUSD(
+          model,
+          groupRatios,
+          usableGroups
+        )
+
+        return {
+          name: configItem.name,
+          inputPrice: formatPriceRange(inputPriceRange),
+          outputPrice: formatPriceRange(outputPriceRange),
+          officialInput: formatPrice(configItem.officialInput),
+          officialOutput: formatPrice(configItem.officialOutput),
+          discount: formatDiscountRange(
+            inputPriceRange,
+            configItem.officialInput
+          ),
+          cacheHit: configItem.cacheHit || '-',
+        }
+      })
+      .filter((item): item is ModelPricingRow => item !== null)
+  }, [pricingData])
 
   const displayHomePageContent = async () => {
     const cached = localStorage.getItem('home_page_content') || ''
@@ -232,13 +405,13 @@ export function Home() {
                             {item.name}
                           </span>
                           <span className='hidden text-center font-mono text-muted-foreground md:block'>
-                            {formatPrice(item.inputPrice)}
+                            {item.inputPrice}
                           </span>
                           <span className='hidden text-center font-mono text-muted-foreground md:block'>
-                            {formatPrice(item.outputPrice)}
+                            {item.outputPrice}
                           </span>
                           <span className='text-center font-mono text-muted-foreground'>
-                            {formatPrice(item.officialInput)} / {formatPrice(item.officialOutput)}
+                            {item.officialInput} / {item.officialOutput}
                           </span>
                           <span className='text-center font-mono font-semibold text-amber-600 dark:text-amber-400'>
                             {item.discount}
@@ -254,15 +427,20 @@ export function Home() {
 
                 {pricingNoticeConfig.enabled && (
                   <div className='mt-4 w-full max-w-5xl rounded-2xl border bg-amber-50/95 px-4 py-2 text-center text-sm text-amber-900 backdrop-blur-sm dark:bg-amber-900/30 dark:text-amber-200 md:px-5'>
-                    {pricingNoticeConfig.text}{' '}
-                    <a
-                      href={pricingNoticeConfig.linkUrl}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='font-semibold underline underline-offset-4'
-                    >
-                      {pricingNoticeConfig.linkText}
-                    </a>
+                    {pricingNoticeConfig.text}
+                    {pricingNoticeConfig.linkText && pricingNoticeConfig.linkUrl ? (
+                      <>
+                        {' '}
+                        <a
+                          href={pricingNoticeConfig.linkUrl}
+                          target='_blank'
+                          rel='noreferrer'
+                          className='font-semibold underline underline-offset-4'
+                        >
+                          {pricingNoticeConfig.linkText}
+                        </a>
+                      </>
+                    ) : null}
                   </div>
                 )}
               </div>

@@ -5,14 +5,9 @@
 
 export interface ModelPricingConfig {
   name: string
-  inputPrice: string
-  outputPrice: string
-  cacheRead: string
-  cacheWrite: string
-  officialInput: string
-  officialOutput: string
-  discount: string
-  cacheHit: string
+  officialInput?: number
+  officialOutput?: number
+  cacheHit?: string
 }
 
 /**
@@ -41,104 +36,59 @@ export const pricingHeaderConfig = {
 }
 
 /**
- * 配置模型价格对比数据
- * - name: 模型名称（最多12个汉字）
- * - inputPrice: 输入价格
- * - outputPrice: 输出价格
- * - cacheRead: 缓存读价格
- * - cacheWrite: 缓存写价格
- * - officialInput: 官方输入价格
- * - officialOutput: 官方输出价格
- * - discount: 折扣显示文本
- * - cacheHit: 缓存命中显示文本
+ * 配置首页需要展示的模型及其官方价格
+ * - name: 模型名称
+ * - officialInput: 官方输入价格（按 1M token, 单位 USD）
+ * - officialOutput: 官方输出价格（按 1M token, 单位 USD）
+ * - cacheHit: 缓存命中展示文本
  */
 export const modelPricingConfig: ModelPricingConfig[] = [
   {
     name: 'claude-opus-4-8',
-    inputPrice: '2～8.5',
-    outputPrice: '10～42.5',
-    cacheRead: '0.2～0.85',
-    cacheWrite: '2.5～10.6',
-    officialInput: '35',
-    officialOutput: '175',
-    discount: '-89%～72%',
+    officialInput: 35,
+    officialOutput: 175,
     cacheHit: '>93%',
   },
   {
     name: 'claude-opus-4-7',
-    inputPrice: '2～8.5',
-    outputPrice: '10～42.5',
-    cacheRead: '0.2～0.85',
-    cacheWrite: '2.5～10.6',
-    officialInput: '35',
-    officialOutput: '175',
-    discount: '-89%～72%',
+    officialInput: 35,
+    officialOutput: 175,
     cacheHit: '>93%',
   },
   {
     name: 'claude-opus-4-6',
-    inputPrice: '2~8.5',
-    outputPrice: '10~42.5',
-    cacheRead: '0.2~0.85',
-    cacheWrite: '2.5~10.6',
-    officialInput: '35',
-    officialOutput: '175',
-    discount: '-89%～72%',
+    officialInput: 35,
+    officialOutput: 175,
     cacheHit: '>93%',
   },
   {
     name: 'claude-sonnet-4-6',
-    inputPrice: '1.2~5.1',
-    outputPrice: '6~25.5',
-    cacheRead: '0.12~0.51',
-    cacheWrite: '1.5~6.3',
-    officialInput: '21',
-    officialOutput: '105',
-    discount: '-89%～72%',
+    officialInput: 21,
+    officialOutput: 105,
     cacheHit: '>93%',
   },
   {
     name: 'claude-haiku-4-5',
-    inputPrice: '0.4~1.7',
-    outputPrice: '2~8.5',
-    cacheRead: '0.04~0.0.17',
-    cacheWrite: '0.5~2.1',
-    officialInput: '7',
-    officialOutput: '35',
-    discount: '-89%～72%',
+    officialInput: 7,
+    officialOutput: 35,
     cacheHit: '>93%',
   },
   {
     name: 'gpt-5.5',
-    inputPrice: '1~4',
-    outputPrice: '6~24',
-    cacheRead: '0.1~0.5',
-    cacheWrite: '1~4',
-    officialInput: '35',
-    officialOutput: '210',
-    discount: '-98%~83%',
+    officialInput: 35,
+    officialOutput: 210,
     cacheHit: '>93%',
   },
   {
     name: 'gpt-5.4',
-    inputPrice: '0.5~2',
-    outputPrice: '3~12',
-    cacheRead: '0.05~0.2',
-    cacheWrite: '0.5~2',
-    officialInput: '17.5',
-    officialOutput: '105',
-    discount: '-98%~83%',
+    officialInput: 17.5,
+    officialOutput: 105,
     cacheHit: '>93%',
   },
   {
     name: 'gpt-5.3-codex',
-    inputPrice: '0.35~1.4',
-    outputPrice: '2.8~11.2',
-    cacheRead: '0.035~0.14',
-    cacheWrite: '0.35~1.4',
-    officialInput: '12.25',
-    officialOutput: '98',
-    discount: '-98%~83%',
+    officialInput: 12.25,
+    officialOutput: 98,
     cacheHit: '>93%',
   },
 ]
@@ -151,10 +101,8 @@ export const modelPricingConfig: ModelPricingConfig[] = [
 export const pricingNoticeConfig = {
   // 公告文字内容
   text: '新用户可以0.01元购买2元试用套餐，7天有效',
-  // 链接文字
-  //linkText: 'https://newtonrouter.top',
-  // 链接地址
-  //linkUrl: 'https://newtonrouter.top',
+  linkText: '',
+  linkUrl: '',
   // 是否显示公告
   enabled: true,
 }
