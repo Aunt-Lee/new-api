@@ -10,6 +10,17 @@ export interface ModelPricingConfig {
   cacheHit?: string
 }
 
+export interface ImageModelPricingTypeConfig {
+  type: string
+  multiplier: number
+  aliases?: string[]
+}
+
+export interface ImageModelPricingConfig {
+  name: string
+  types: ImageModelPricingTypeConfig[]
+}
+
 /**
  * 货币单位配置
  * currency: 'USD' | 'CNY' - 美元或人民币
@@ -33,6 +44,12 @@ export const pricingHeaderConfig = {
   official: '官方输入/输出(1M)',
   discount: '折扣',
   cacheHit: '缓存命中',
+}
+
+export const imagePricingHeaderConfig = {
+  model: '模型名称',
+  type: '图像类型',
+  price: '价格',
 }
 
 /**
@@ -90,6 +107,29 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     officialInput: 12.25,
     officialOutput: 98,
     cacheHit: '>93%',
+  },
+]
+
+export const imageModelPricingConfig: ImageModelPricingConfig[] = [
+  {
+    name: 'gpt-image-2',
+    types: [
+      {
+        type: '1K',
+        multiplier: 1,
+        aliases: ['gpt-image-2-1k', 'gpt-image-2-1K'],
+      },
+      {
+        type: '2K',
+        multiplier: 4,
+        aliases: ['gpt-image-2-2k', 'gpt-image-2-2K'],
+      },
+      {
+        type: '4K',
+        multiplier: 16,
+        aliases: ['gpt-image-2-4k', 'gpt-image-2-4K'],
+      },
+    ],
   },
 ]
 

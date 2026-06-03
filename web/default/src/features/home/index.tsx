@@ -36,7 +36,13 @@ import { toast } from 'sonner'
 import { getPricing } from '@/features/pricing/api'
 import { QUOTA_TYPE_VALUES } from '@/features/pricing/constants'
 import type { PricingModel } from '@/features/pricing/types'
-import { modelPricingConfig, pricingNoticeConfig, pricingHeaderConfig } from './model-pricing-config'
+import {
+  imageModelPricingConfig,
+  imagePricingHeaderConfig,
+  modelPricingConfig,
+  pricingHeaderConfig,
+  pricingNoticeConfig,
+} from './model-pricing-config'
 
 interface ModelPricingRow {
   name: string
@@ -46,6 +52,12 @@ interface ModelPricingRow {
   officialOutput: string
   discount: string
   cacheHit: string
+}
+
+interface ImageModelPricingRow {
+  name: string
+  types: string
+  price: string
 }
 
 interface HomePricingResponse {
@@ -129,6 +141,34 @@ function getOutputPriceRangeUSD(
   )
 }
 
+function getImagePriceRangeUSD(
+  model: PricingModel,
+  groupRatios: Record<string, number>,
+  usableGroups: Record<string, { desc: string; ratio: number }>,
+  multiplier: number
+): { min: number; max: number } | null {
+  const groups = getModelUsableGroupRatios(model, groupRatios, usableGroups)
+  const ranges = groups
+    .map((ratio) => {
+      if (model.quota_type === QUOTA_TYPE_VALUES.REQUEST) {
+        return (model.model_price || 0) * ratio * multiplier
+      }
+
+      const imageRatio = hasNumber(model.image_ratio)
+        ? Number(model.image_ratio)
+        : 1
+      return model.model_ratio * 2 * ratio * imageRatio * multiplier
+    })
+    .filter((value) => Number.isFinite(value) && value > 0)
+
+  if (ranges.length === 0) return null
+
+  return {
+    min: Math.min(...ranges),
+    max: Math.max(...ranges),
+  }
+}
+
 function formatPriceRange(
   range: { min: number; max: number } | null
 ): string {
@@ -137,6 +177,13 @@ function formatPriceRange(
     return formatPrice(range.min)
   }
   return `${formatPrice(range.min)}~${formatPrice(range.max)}`
+}
+
+function formatPerRequestPriceRange(
+  range: { min: number; max: number } | null
+): string {
+  const price = formatPriceRange(range)
+  return price === '-' ? price : `${price}/次`
 }
 
 function getDiscountPercent(actual: number, official: number): number | null {
@@ -182,6 +229,17 @@ function formatDiscountRange(
   const first = formatDiscountPercent(maxValue)
   const second = formatUnsignedDiscountPercent(minValue)
   return `${first}~${second}`
+}
+
+function findPricingModel(
+  modelMap: Map<string, PricingModel>,
+  names: string[]
+): PricingModel | null {
+  for (const name of names) {
+    const model = modelMap.get(name)
+    if (model) return model
+  }
+  return null
 }
 
 export function Home() {
@@ -236,6 +294,27 @@ export function Home() {
         }
       })
       .filter((item): item is ModelPricingRow => item !== null)
+  }, [pricingData])
+
+  const imageModelPricingRows = useMemo<ImageModelPricingRow[]>(() => {
+    const pricingModels = pricingData?.data || []
+    const groupRatios = pricingData?.group_ratio || {}
+    const usableGroups = pricingData?.usable_group || {}
+    const modelMap = new Map(pricingModels.map((model) => [model.model_name, model]))
+
+    return imageModelPricingConfig.map((configItem) => {
+      const typeLabels = configItem.types.map((typeItem) => typeItem.type)
+      const model = findPricingModel(modelMap, [configItem.name])
+      const priceRange = model
+        ? getImagePriceRangeUSD(model, groupRatios, usableGroups, 1)
+        : null
+
+      return {
+        name: configItem.name,
+        types: typeLabels.join('、'),
+        price: formatPerRequestPriceRange(priceRange),
+      }
+    })
   }, [pricingData])
 
   const displayHomePageContent = async () => {
@@ -418,6 +497,42 @@ export function Home() {
                           </span>
                           <span className='text-center font-mono font-semibold text-green-600 dark:text-green-400'>
                             {item.cacheHit}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-6 w-full max-w-5xl">
+                  <h2 className="text-xl md:text-2xl font-semibold text-center mb-6">{t('图像模型')}</h2>
+                  <div className="rounded-3xl bg-white/40 dark:bg-white/5 backdrop-blur-md overflow-hidden" style={{ border: 'none', boxShadow: 'none' }}>
+                    <div className='grid grid-cols-3 px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider'>
+                      <span className='text-left'>{imagePricingHeaderConfig.model}</span>
+                      <span className='text-center'>{imagePricingHeaderConfig.type}</span>
+                      <span className='text-center'>{imagePricingHeaderConfig.price}</span>
+                    </div>
+
+                    <div className="mx-5 h-px bg-border/40" />
+
+                    {imageModelPricingRows.length === 0 ? (
+                      <div className='px-5 py-6 text-sm text-muted-foreground'>
+                        {t('暂无价格数据')}
+                      </div>
+                    ) : (
+                      imageModelPricingRows.map((item) => (
+                        <div
+                          key={item.name}
+                          className='grid grid-cols-3 items-center px-5 py-3.5 text-sm transition-colors hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                        >
+                          <span className='truncate pr-2 text-left font-medium text-foreground' title={item.name}>
+                            {item.name}
+                          </span>
+                          <span className='text-center font-mono text-muted-foreground'>
+                            {item.types}
+                          </span>
+                          <span className='text-center font-mono font-semibold text-foreground'>
+                            {item.price}
                           </span>
                         </div>
                       ))
