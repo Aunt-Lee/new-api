@@ -16,10 +16,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useCallback, useEffect, useState } from 'react'
+import { type ChangeEvent, useCallback, useEffect, useState } from 'react'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
@@ -59,9 +60,9 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { StatusBadge } from '@/components/status-badge'
+import { updateSystemOption } from '../api'
 import { SettingsSection } from '../components/settings-section'
 import { useResetForm } from '../hooks/use-reset-form'
-import { useUpdateOption } from '../hooks/use-update-option'
 
 const perfSchema = z.object({
   'performance_setting.disk_cache_enabled': z.boolean(),
@@ -95,6 +96,66 @@ function formatBytes(bytes: number, decimals = 2): string {
   const i = Math.floor(Math.log(Math.abs(bytes)) / Math.log(k))
   if (i < 0 || i >= sizes.length) return bytes + ' Bytes'
   return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i]
+}
+
+function handleNumberChange(onChange: (value: unknown) => void) {
+  return (event: ChangeEvent<HTMLInputElement>) => {
+    onChange(event.target.value === '' ? '' : event.target.valueAsNumber)
+  }
+}
+
+function handleBooleanChange(onChange: (value: unknown) => void) {
+  return (checked: boolean) => {
+    onChange(Boolean(checked))
+  }
+}
+
+const numberFieldKeys = new Set<string>([
+  'performance_setting.disk_cache_threshold_mb',
+  'performance_setting.disk_cache_max_size_mb',
+  'performance_setting.monitor_cpu_threshold',
+  'performance_setting.monitor_memory_threshold',
+  'performance_setting.monitor_disk_threshold',
+  'perf_metrics_setting.flush_interval',
+  'perf_metrics_setting.retention_days',
+])
+
+const booleanFieldKeys = new Set<string>([
+  'performance_setting.disk_cache_enabled',
+  'performance_setting.monitor_enabled',
+  'perf_metrics_setting.enabled',
+])
+
+function getCurrentPerfEntries(data: PerfFormValues) {
+  return (Object.entries(data) as [string, string | number | boolean][]).map(
+    ([key, value]) => {
+      if (typeof document === 'undefined') {
+        return [key, value] as const
+      }
+
+      if (numberFieldKeys.has(key)) {
+        const input = document.querySelector<HTMLInputElement>(
+          `input[name="${key}"]`
+        )
+        if (!input || input.value === '' || Number.isNaN(input.valueAsNumber)) {
+          return [key, value] as const
+        }
+
+        return [key, input.valueAsNumber] as const
+      }
+
+      if (booleanFieldKeys.has(key)) {
+        const switchEl = document.querySelector<HTMLElement>(
+          `[data-option-key="${key}"]`
+        )
+        if (switchEl) {
+          return [key, switchEl.hasAttribute('data-checked')] as const
+        }
+      }
+
+      return [key, value] as const
+    }
+  )
 }
 
 interface Props {
@@ -145,12 +206,13 @@ type PerformanceStats = {
 
 export function PerformanceSection(props: Props) {
   const { t } = useTranslation()
-  const updateOption = useUpdateOption()
+  const queryClient = useQueryClient()
   const [stats, setStats] = useState<PerformanceStats | null>(null)
   const [logInfo, setLogInfo] = useState<LogInfo | null>(null)
   const [logCleanupMode, setLogCleanupMode] = useState('by_count')
   const [logCleanupValue, setLogCleanupValue] = useState(10)
   const [logCleanupLoading, setLogCleanupLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const form = useForm<PerfFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -185,23 +247,25 @@ export function PerformanceSection(props: Props) {
   }, [fetchStats, fetchLogInfo])
 
   const onSubmit = async (data: PerfFormValues) => {
-    const entries = Object.entries(data) as [string, unknown][]
-    const updates = entries.filter(
-      ([key, value]) =>
-        value !== (props.defaultValues[key as keyof PerfFormValues] as unknown)
-    )
-    if (updates.length === 0) {
-      toast.info(t('No changes to save'))
-      return
+    const entries = getCurrentPerfEntries(data)
+    setSaving(true)
+    try {
+      for (const [key, value] of entries) {
+        const res = await updateSystemOption({ key, value })
+        if (!res.success) {
+          throw new Error(res.message || t('Failed to update setting'))
+        }
+      }
+      await queryClient.invalidateQueries({ queryKey: ['system-options'] })
+      toast.success(t('Saved successfully'))
+      fetchStats()
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : t('Failed to update setting')
+      )
+    } finally {
+      setSaving(false)
     }
-    for (const [key, value] of updates) {
-      await updateOption.mutateAsync({
-        key,
-        value: value as string | number | boolean,
-      })
-    }
-    toast.success(t('Saved successfully'))
-    fetchStats()
   }
 
   const clearDiskCache = async () => {
@@ -320,8 +384,9 @@ export function PerformanceSection(props: Props) {
                 <FormItem className='flex items-center gap-2'>
                   <FormControl>
                     <Switch
+                      data-option-key='performance_setting.disk_cache_enabled'
                       checked={field.value}
-                      onCheckedChange={field.onChange}
+                      onCheckedChange={handleBooleanChange(field.onChange)}
                     />
                   </FormControl>
                   <FormLabel>{t('Enable Disk Cache')}</FormLabel>
@@ -335,7 +400,12 @@ export function PerformanceSection(props: Props) {
                 <FormItem>
                   <FormLabel>{t('Disk Cache Threshold (MB)')}</FormLabel>
                   <FormControl>
-                    <Input type='number' {...field} disabled={!diskEnabled} />
+                    <Input
+                      type='number'
+                      {...field}
+                      onChange={handleNumberChange(field.onChange)}
+                      disabled={!diskEnabled}
+                    />
                   </FormControl>
                   <FormDescription>
                     {t('Use disk cache when request body exceeds this size')}
@@ -350,7 +420,12 @@ export function PerformanceSection(props: Props) {
                 <FormItem>
                   <FormLabel>{t('Max Disk Cache Size (MB)')}</FormLabel>
                   <FormControl>
-                    <Input type='number' {...field} disabled={!diskEnabled} />
+                    <Input
+                      type='number'
+                      {...field}
+                      onChange={handleNumberChange(field.onChange)}
+                      disabled={!diskEnabled}
+                    />
                   </FormControl>
                   {stats?.disk_space_info &&
                     stats.disk_space_info.total > 0 && (
@@ -418,8 +493,9 @@ export function PerformanceSection(props: Props) {
                 <FormItem className='flex items-center gap-2'>
                   <FormControl>
                     <Switch
+                      data-option-key='performance_setting.monitor_enabled'
                       checked={field.value}
-                      onCheckedChange={field.onChange}
+                      onCheckedChange={handleBooleanChange(field.onChange)}
                     />
                   </FormControl>
                   <FormLabel>{t('Enable Performance Monitoring')}</FormLabel>
@@ -436,6 +512,7 @@ export function PerformanceSection(props: Props) {
                     <Input
                       type='number'
                       {...field}
+                      onChange={handleNumberChange(field.onChange)}
                       disabled={!monitorEnabled}
                     />
                   </FormControl>
@@ -452,6 +529,7 @@ export function PerformanceSection(props: Props) {
                     <Input
                       type='number'
                       {...field}
+                      onChange={handleNumberChange(field.onChange)}
                       disabled={!monitorEnabled}
                     />
                   </FormControl>
@@ -468,6 +546,7 @@ export function PerformanceSection(props: Props) {
                     <Input
                       type='number'
                       {...field}
+                      onChange={handleNumberChange(field.onChange)}
                       disabled={!monitorEnabled}
                     />
                   </FormControl>
@@ -495,8 +574,9 @@ export function PerformanceSection(props: Props) {
                 <FormItem className='flex items-center gap-2'>
                   <FormControl>
                     <Switch
+                      data-option-key='perf_metrics_setting.enabled'
                       checked={field.value}
-                      onCheckedChange={field.onChange}
+                      onCheckedChange={handleBooleanChange(field.onChange)}
                     />
                   </FormControl>
                   <FormLabel>{t('Enable model performance metrics')}</FormLabel>
@@ -514,6 +594,7 @@ export function PerformanceSection(props: Props) {
                       type='number'
                       min={1}
                       {...field}
+                      onChange={handleNumberChange(field.onChange)}
                       disabled={!perfMetricsEnabled}
                     />
                   </FormControl>
@@ -563,6 +644,7 @@ export function PerformanceSection(props: Props) {
                       type='number'
                       min={0}
                       {...field}
+                      onChange={handleNumberChange(field.onChange)}
                       disabled={!perfMetricsEnabled}
                     />
                   </FormControl>
@@ -574,8 +656,8 @@ export function PerformanceSection(props: Props) {
             />
           </div>
 
-          <Button type='submit' disabled={updateOption.isPending}>
-            {updateOption.isPending ? t('Saving...') : t('Save Changes')}
+          <Button type='submit' disabled={saving}>
+            {saving ? t('Saving...') : t('Save Changes')}
           </Button>
         </form>
       </Form>
