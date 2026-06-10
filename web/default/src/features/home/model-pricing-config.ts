@@ -91,6 +91,12 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     cacheHit: '>93%',
   },
   {
+    name: 'claude-fable-5',
+    officialInput: 70,
+    officialOutput: 350,
+    cacheHit: '>93%',
+  },
+  {
     name: 'gpt-5.5',
     officialInput: 35,
     officialOutput: 210,
