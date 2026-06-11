@@ -61,6 +61,12 @@ export const imagePricingHeaderConfig = {
  */
 export const modelPricingConfig: ModelPricingConfig[] = [
   {
+    name: 'claude-fable-5',
+    officialInput: 70,
+    officialOutput: 350,
+    cacheHit: '>93%',
+  },
+  {
     name: 'claude-opus-4-8',
     officialInput: 35,
     officialOutput: 175,
@@ -88,12 +94,6 @@ export const modelPricingConfig: ModelPricingConfig[] = [
     name: 'claude-haiku-4-5',
     officialInput: 7,
     officialOutput: 35,
-    cacheHit: '>93%',
-  },
-  {
-    name: 'claude-fable-5',
-    officialInput: 70,
-    officialOutput: 350,
     cacheHit: '>93%',
   },
   {
@@ -146,7 +146,7 @@ export const imageModelPricingConfig: ImageModelPricingConfig[] = [
  */
 export const pricingNoticeConfig = {
   // 公告文字内容
-  text: '新用户可以0.01元购买2元试用套餐，7天有效',
+  text: '新用户可以0.01元购买2元试用套餐，7天有效，累计消费满500可开发票',
   linkText: '',
   linkUrl: '',
   // 是否显示公告

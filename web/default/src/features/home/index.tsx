@@ -20,19 +20,37 @@ import { useEffect, useMemo, useState } from 'react'
 import { GitHubLogoIcon } from '@radix-ui/react-icons'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Play, Copy } from 'lucide-react'
+import { Check, Copy, Play } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useSystemConfigStore } from '@/stores/system-config-store'
 import { api } from '@/lib/api'
 import { formatBillingCurrencyFromUSD } from '@/lib/currency'
+import { formatQuota } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
 import { PublicLayout } from '@/components/layout'
 import { Footer } from '@/components/layout/components/footer'
 import { getPricing } from '@/features/pricing/api'
 import { QUOTA_TYPE_VALUES } from '@/features/pricing/constants'
 import type { PricingModel } from '@/features/pricing/types'
+import { getPublicPlans } from '@/features/subscriptions/api'
+import {
+  formatDuration,
+  formatResetPeriod,
+  formatSubscriptionPrice,
+} from '@/features/subscriptions/lib'
 import {
   imageModelPricingConfig,
   imagePricingHeaderConfig,
@@ -252,6 +270,20 @@ export function Home() {
     queryFn: getPricing,
     staleTime: 5 * 60 * 1000,
   })
+  const { data: subscriptionPlansData } = useQuery({
+    queryKey: ['home-subscription-plans'],
+    queryFn: getPublicPlans,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const subscriptionPlans = useMemo(() => {
+    return (subscriptionPlansData?.data || [])
+      .filter((item) => item.plan?.enabled)
+      .sort(
+        (a, b) =>
+          Number(a.plan?.sort_order || 0) - Number(b.plan?.sort_order || 0)
+      )
+  }, [subscriptionPlansData])
 
   const modelPricingRows = useMemo<ModelPricingRow[]>(() => {
     const pricingModels = pricingData?.data || []
@@ -382,17 +414,17 @@ export function Home() {
     <PublicLayout showMainContainer={false}>
       <div className='w-full overflow-x-hidden'>
         <div className='home-claude w-full overflow-x-hidden'>
-          {/* Banner 部分 */}
           <div className='relative min-h-[500px] w-full overflow-x-hidden border-b md:min-h-[600px] lg:min-h-[700px]'>
-            {/* 背景模糊晕染球 */}
             <div className='blur-ball blur-ball-indigo' />
             <div className='blur-ball blur-ball-teal' />
             <div className='mt-10 flex h-full items-center justify-center px-4 py-20 md:py-24 lg:py-32'>
-              {/* 居中内容区 */}
-              <div className='mx-auto flex max-w-4xl flex-col items-center justify-center text-center'>
+              <div className='mx-auto flex w-full max-w-6xl flex-col items-center justify-center text-center'>
                 <div className='mb-6 flex flex-col items-center justify-center md:mb-8'>
                   <h1
-                    className={`text-foreground text-4xl leading-tight font-bold md:text-5xl lg:text-6xl xl:text-7xl ${isChinese ? 'tracking-wide md:tracking-wider' : ''}`}
+                    className={cn(
+                      'text-foreground text-4xl leading-tight font-bold md:text-5xl lg:text-6xl xl:text-7xl',
+                      isChinese && 'tracking-wide md:tracking-wider'
+                    )}
                   >
                     {t('直连官方的')}
                     <br />
@@ -403,8 +435,7 @@ export function Home() {
                   <p className='text-muted-foreground mt-4 max-w-xl text-base md:mt-6 md:text-lg lg:text-xl'>
                     {t('还有更多低价渠道，稳定流畅，只需要将BaseUrl替换为：')}
                   </p>
-                  {/* BASE URL */}
-                  <div className='mt-4 flex w-full max-w-md flex-col items-center justify-center gap-4 md:mt-6 md:flex-row'>
+                  <div className='mt-4 flex w-full max-w-lg flex-col items-center justify-center gap-4 md:mt-6 md:flex-row'>
                     <div className='relative w-full flex-1'>
                       <Input
                         readOnly
@@ -414,22 +445,21 @@ export function Home() {
                       <div className='absolute top-1/2 right-1 flex -translate-y-1/2 items-center gap-1'>
                         <Button
                           variant='ghost'
-                          size='icon'
-                          className='h-7 w-7 rounded-full'
+                          size='icon-sm'
+                          className='rounded-full'
                           onClick={handleCopyBaseURL}
                         >
-                          <Copy className='h-4 w-4' />
+                          <Copy />
                         </Button>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* 操作按钮 */}
-                <div className='flex flex-row items-center justify-center gap-4'>
-                  <Link to='/console'>
-                    <Button size='lg' className='rounded-full px-8'>
-                      <Play className='mr-2 h-4 w-4' />
+                <div className='flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-4'>
+                  <Link to='/console' className='w-full sm:w-auto'>
+                    <Button size='lg' className='w-full rounded-full px-8'>
+                      <Play data-icon='inline-start' />
                       {t('获取密钥')}
                     </Button>
                   </Link>
@@ -437,7 +467,7 @@ export function Home() {
                     <Button
                       variant='outline'
                       size='lg'
-                      className='rounded-full px-6'
+                      className='w-full rounded-full px-6 sm:w-auto'
                       onClick={() =>
                         window.open(
                           'https://github.com/QuantumNous/new-api',
@@ -445,23 +475,24 @@ export function Home() {
                         )
                       }
                     >
-                      <GitHubLogoIcon className='mr-2 h-4 w-4' />
+                      <GitHubLogoIcon data-icon='inline-start' />
                       GitHub
                     </Button>
                   )}
                 </div>
 
-                {/* 价格对比卡片 */}
-                <div className='mt-12 w-full max-w-5xl'>
-                  <h2 className='mb-6 text-center text-xl font-semibold md:text-2xl'>
-                    {t('模型价格对比')}
-                  </h2>
-                  <div
-                    className='overflow-hidden rounded-3xl bg-white/40 backdrop-blur-md dark:bg-white/5'
-                    style={{ border: 'none', boxShadow: 'none' }}
-                  >
-                    {/* 表头 */}
-                    <div className='text-muted-foreground grid grid-cols-3 px-5 py-3.5 text-xs font-semibold tracking-wider uppercase md:grid-cols-6'>
+                <Card className='bg-card/70 mt-12 w-full max-w-5xl rounded-3xl text-left backdrop-blur-md'>
+                  <CardHeader className='items-center text-center'>
+                    <CardTitle
+                      role='heading'
+                      aria-level={2}
+                      className='text-xl font-semibold md:text-2xl'
+                    >
+                      {t('模型价格对比')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className='px-0'>
+                    <div className='text-muted-foreground hidden grid-cols-6 px-5 py-3 text-xs font-semibold tracking-wider uppercase md:grid'>
                       <span className='min-w-[140px] text-left md:min-w-[180px]'>
                         {pricingHeaderConfig.model}
                       </span>
@@ -482,10 +513,8 @@ export function Home() {
                       </span>
                     </div>
 
-                    {/* 分隔线 */}
-                    <div className='bg-border/40 mx-5 h-px' />
+                    <Separator className='mx-5 w-auto' />
 
-                    {/* 数据行 */}
                     {modelPricingRows.length === 0 ? (
                       <div className='text-muted-foreground px-5 py-6 text-sm'>
                         {t('暂无价格数据')}
@@ -494,13 +523,29 @@ export function Home() {
                       modelPricingRows.map((item) => (
                         <div
                           key={item.name}
-                          className='grid grid-cols-3 items-center px-5 py-3.5 text-sm transition-colors hover:bg-black/[0.02] md:grid-cols-6 dark:hover:bg-white/[0.02]'
+                          className='hover:bg-muted/45 grid grid-cols-2 items-center gap-3 px-5 py-4 text-sm transition-colors md:grid-cols-6 md:gap-0 md:py-3.5'
                         >
                           <span
-                            className='text-foreground min-w-[140px] truncate pr-2 text-left font-medium md:min-w-[180px]'
+                            className='text-foreground col-span-2 truncate text-left font-medium md:col-span-1 md:min-w-[180px] md:pr-2'
                             title={item.name}
                           >
                             {item.name}
+                          </span>
+                          <span className='bg-muted/35 flex flex-col gap-1 rounded-xl p-2 text-left md:hidden'>
+                            <span className='text-muted-foreground text-xs'>
+                              {pricingHeaderConfig.input}
+                            </span>
+                            <span className='text-foreground font-mono font-medium'>
+                              {item.inputPrice}
+                            </span>
+                          </span>
+                          <span className='bg-muted/35 flex flex-col gap-1 rounded-xl p-2 text-left md:hidden'>
+                            <span className='text-muted-foreground text-xs'>
+                              {pricingHeaderConfig.output}
+                            </span>
+                            <span className='text-foreground font-mono font-medium'>
+                              {item.outputPrice}
+                            </span>
                           </span>
                           <span className='text-muted-foreground hidden text-center font-mono md:block'>
                             {item.inputPrice}
@@ -508,30 +553,48 @@ export function Home() {
                           <span className='text-muted-foreground hidden text-center font-mono md:block'>
                             {item.outputPrice}
                           </span>
-                          <span className='text-muted-foreground text-center font-mono'>
-                            {item.officialInput} / {item.officialOutput}
+                          <span className='text-muted-foreground flex flex-col gap-1 text-left font-mono md:block md:text-center'>
+                            <span className='text-muted-foreground text-xs md:hidden'>
+                              {pricingHeaderConfig.official}
+                            </span>
+                            <span>
+                              {item.officialInput} / {item.officialOutput}
+                            </span>
                           </span>
-                          <span className='text-center font-mono font-semibold text-amber-600 dark:text-amber-400'>
-                            {item.discount}
+                          <span className='flex flex-col gap-1 text-left md:block md:text-center'>
+                            <span className='text-muted-foreground text-xs md:hidden'>
+                              {pricingHeaderConfig.discount}
+                            </span>
+                            <Badge variant='outline' className='font-mono'>
+                              {item.discount}
+                            </Badge>
                           </span>
-                          <span className='text-center font-mono font-semibold text-green-600 dark:text-green-400'>
-                            {item.cacheHit}
+                          <span className='flex flex-col gap-1 text-left md:block md:text-center'>
+                            <span className='text-muted-foreground text-xs md:hidden'>
+                              {pricingHeaderConfig.cacheHit}
+                            </span>
+                            <Badge variant='secondary' className='font-mono'>
+                              {item.cacheHit}
+                            </Badge>
                           </span>
                         </div>
                       ))
                     )}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
 
-                <div className='mt-6 w-full max-w-5xl'>
-                  <h2 className='mb-6 text-center text-xl font-semibold md:text-2xl'>
-                    {t('图像模型')}
-                  </h2>
-                  <div
-                    className='overflow-hidden rounded-3xl bg-white/40 backdrop-blur-md dark:bg-white/5'
-                    style={{ border: 'none', boxShadow: 'none' }}
-                  >
-                    <div className='text-muted-foreground grid grid-cols-3 px-5 py-3.5 text-xs font-semibold tracking-wider uppercase'>
+                <Card className='bg-card/70 mt-6 w-full max-w-5xl rounded-3xl text-left backdrop-blur-md'>
+                  <CardHeader className='items-center text-center'>
+                    <CardTitle
+                      role='heading'
+                      aria-level={2}
+                      className='text-xl font-semibold md:text-2xl'
+                    >
+                      {t('图像模型')}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className='px-0'>
+                    <div className='text-muted-foreground hidden grid-cols-3 px-5 py-3 text-xs font-semibold tracking-wider uppercase sm:grid'>
                       <span className='text-left'>
                         {imagePricingHeaderConfig.model}
                       </span>
@@ -543,7 +606,7 @@ export function Home() {
                       </span>
                     </div>
 
-                    <div className='bg-border/40 mx-5 h-px' />
+                    <Separator className='mx-5 w-auto' />
 
                     {imageModelPricingRows.length === 0 ? (
                       <div className='text-muted-foreground px-5 py-6 text-sm'>
@@ -553,43 +616,159 @@ export function Home() {
                       imageModelPricingRows.map((item) => (
                         <div
                           key={item.name}
-                          className='grid grid-cols-3 items-center px-5 py-3.5 text-sm transition-colors hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                          className='hover:bg-muted/45 grid grid-cols-2 items-center gap-3 px-5 py-4 text-sm transition-colors sm:grid-cols-3 sm:gap-0 sm:py-3.5'
                         >
                           <span
-                            className='text-foreground truncate pr-2 text-left font-medium'
+                            className='text-foreground col-span-2 truncate text-left font-medium sm:col-span-1 sm:pr-2'
                             title={item.name}
                           >
                             {item.name}
                           </span>
-                          <span className='text-muted-foreground text-center font-mono'>
-                            {item.types}
+                          <span className='flex flex-col gap-1 text-left sm:block sm:text-center'>
+                            <span className='text-muted-foreground text-xs sm:hidden'>
+                              {imagePricingHeaderConfig.type}
+                            </span>
+                            <span className='text-muted-foreground font-mono'>
+                              {item.types}
+                            </span>
                           </span>
-                          <span className='text-foreground text-center font-mono font-semibold'>
-                            {item.price}
+                          <span className='flex flex-col gap-1 text-left sm:block sm:text-center'>
+                            <span className='text-muted-foreground text-xs sm:hidden'>
+                              {imagePricingHeaderConfig.price}
+                            </span>
+                            <span className='text-foreground font-mono font-semibold'>
+                              {item.price}
+                            </span>
                           </span>
                         </div>
                       ))
                     )}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
 
-                {pricingNoticeConfig.enabled && (
-                  <div className='mt-4 w-full max-w-5xl rounded-2xl border bg-amber-50/95 px-4 py-2 text-center text-sm text-amber-900 backdrop-blur-sm md:px-5 dark:bg-amber-900/30 dark:text-amber-200'>
-                    {pricingNoticeConfig.text}
-                    {pricingNoticeConfig.linkText &&
-                    pricingNoticeConfig.linkUrl ? (
-                      <>
-                        {' '}
-                        <a
-                          href={pricingNoticeConfig.linkUrl}
-                          target='_blank'
-                          rel='noreferrer'
-                          className='font-semibold underline underline-offset-4'
-                        >
-                          {pricingNoticeConfig.linkText}
-                        </a>
-                      </>
-                    ) : null}
+                {pricingNoticeConfig.enabled &&
+                  subscriptionPlans.length === 0 && (
+                    <Alert className='mt-4 w-full max-w-5xl text-center backdrop-blur-sm'>
+                      <AlertDescription>
+                        {pricingNoticeConfig.text}
+                        {pricingNoticeConfig.linkText &&
+                        pricingNoticeConfig.linkUrl ? (
+                          <>
+                            {' '}
+                            <a
+                              href={pricingNoticeConfig.linkUrl}
+                              target='_blank'
+                              rel='noreferrer'
+                              className='font-semibold'
+                            >
+                              {pricingNoticeConfig.linkText}
+                            </a>
+                          </>
+                        ) : null}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                {subscriptionPlans.length > 0 && (
+                  <div className='mt-6 w-full max-w-5xl'>
+                    <h2 className='mb-6 text-center text-xl font-semibold md:text-2xl'>
+                      {t('Subscription Plans')}
+                    </h2>
+                    {pricingNoticeConfig.enabled && (
+                      <Alert className='mb-4 text-center backdrop-blur-sm'>
+                        <AlertDescription>
+                          {pricingNoticeConfig.text}
+                          {pricingNoticeConfig.linkText &&
+                          pricingNoticeConfig.linkUrl ? (
+                            <>
+                              {' '}
+                              <a
+                                href={pricingNoticeConfig.linkUrl}
+                                target='_blank'
+                                rel='noreferrer'
+                                className='font-semibold'
+                              >
+                                {pricingNoticeConfig.linkText}
+                              </a>
+                            </>
+                          ) : null}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    <div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3'>
+                      {subscriptionPlans.map((item) => {
+                        const plan = item.plan
+                        const totalAmount = Number(plan.total_amount || 0)
+                        const resetPeriod = formatResetPeriod(plan, t)
+                        const benefits = [
+                          `${t('Validity Period')}: ${formatDuration(plan, t)}`,
+                          resetPeriod !== t('No Reset')
+                            ? `${t('Quota Reset')}: ${resetPeriod}`
+                            : null,
+                          totalAmount > 0
+                            ? `${t('Total Quota')}: ${formatQuota(totalAmount)}`
+                            : `${t('Total Quota')}: ${t('Unlimited')}`,
+                          plan.upgrade_group
+                            ? `${t('Upgrade Group')}: ${plan.upgrade_group}`
+                            : null,
+                        ].filter(Boolean) as string[]
+
+                        return (
+                          <Card
+                            key={plan.id}
+                            className='bg-card/70 min-h-[240px] rounded-3xl text-left backdrop-blur-md transition-transform hover:-translate-y-0.5'
+                          >
+                            <CardHeader>
+                              <CardTitle
+                                role='heading'
+                                aria-level={3}
+                                className='truncate text-lg font-semibold'
+                              >
+                                {plan.title || t('Subscription Plans')}
+                              </CardTitle>
+                              {plan.subtitle && (
+                                <div className='text-muted-foreground line-clamp-2 text-sm'>
+                                  {plan.subtitle}
+                                </div>
+                              )}
+                            </CardHeader>
+
+                            <CardContent className='flex flex-1 flex-col gap-5'>
+                              <div className='bg-primary/8 rounded-2xl px-4 py-3'>
+                                <span className='text-primary text-3xl font-bold'>
+                                  {formatSubscriptionPrice(
+                                    plan.price_amount || 0
+                                  )}
+                                </span>
+                              </div>
+
+                              <div className='flex flex-col gap-2'>
+                                {benefits.map((benefit) => (
+                                  <div
+                                    key={benefit}
+                                    className='text-muted-foreground flex items-start gap-2 text-sm'
+                                  >
+                                    <Check className='text-primary mt-0.5 size-4 shrink-0' />
+                                    <span>{benefit}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+
+                            <CardFooter>
+                              <Link to='/wallet' className='w-full'>
+                                <Button
+                                  variant='outline'
+                                  className='w-full rounded-full'
+                                >
+                                  {t('Subscribe Now')}
+                                </Button>
+                              </Link>
+                            </CardFooter>
+                          </Card>
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
