@@ -281,7 +281,7 @@ export function Home() {
       .filter((item) => item.plan?.enabled)
       .sort(
         (a, b) =>
-          Number(a.plan?.sort_order || 0) - Number(b.plan?.sort_order || 0)
+          Number(b.plan?.sort_order || 0) - Number(a.plan?.sort_order || 0)
       )
   }, [subscriptionPlansData])
 
