@@ -153,6 +153,12 @@ export function useTopNavLinks(): TopNavLink[] {
     }
   }
 
+  links.push({
+    title: t('Image Generation Tool'),
+    href: 'https://newtonrouterdoc.vercel.app/Gpt-image-2/',
+    external: true,
+  })
+
   // About
   if (modules?.about !== false) {
     links.push({ title: t('About'), href: '/about' })
