@@ -92,6 +92,59 @@ type ApiKeyFormSectionProps = {
   children: ReactNode
 }
 
+function collectFormErrorMessages(
+  errors: FieldErrors<ApiKeyFormValues>,
+  prefix = ''
+): string[] {
+  return Object.entries(errors).flatMap(([key, error]) => {
+    const fieldName = prefix ? `${prefix}.${key}` : key
+
+    if (!error) return []
+
+    const message =
+      typeof error.message === 'string' ? error.message : undefined
+
+    if (message) {
+      return [`${fieldName}: ${message}`]
+    }
+
+    const nestedErrors = Object.fromEntries(
+      Object.entries(error).filter(([nestedKey, value]) => {
+        return (
+          !['message', 'ref', 'type', 'types'].includes(nestedKey) &&
+          value &&
+          typeof value === 'object'
+        )
+      })
+    )
+
+    if (Object.keys(nestedErrors).length === 0) {
+      return [`${fieldName}: Invalid value`]
+    }
+
+    return collectFormErrorMessages(
+      nestedErrors as FieldErrors<ApiKeyFormValues>,
+      fieldName
+    )
+  })
+}
+
+function getSafeFormSnapshot(values: ApiKeyFormValues) {
+  return {
+    nameLength: values.name?.length ?? 0,
+    group: values.group || '',
+    expired_time: values.expired_time?.toISOString?.() || null,
+    unlimited_quota: values.unlimited_quota,
+    remain_quota_dollars: values.remain_quota_dollars,
+    model_limits_count: values.model_limits?.length ?? 0,
+    allow_ips_lines: values.allow_ips
+      ? values.allow_ips.split('\n').filter((line) => line.trim()).length
+      : 0,
+    cross_group_retry: values.cross_group_retry,
+    tokenCount: values.tokenCount,
+  }
+}
+
 function ApiKeyFormSection(props: ApiKeyFormSectionProps) {
   const Icon = props.icon
 
@@ -185,11 +238,31 @@ export function ApiKeysMutateDrawer({
     setIsSubmitting(true)
     try {
       const basePayload = transformFormDataToPayload(data)
+      // Temporary production diagnostics for online-only submit issues.
+      // eslint-disable-next-line no-console
+      console.info('[api-key-form] submitting', {
+        mode: isUpdate ? 'update' : 'create',
+        tokenId: currentRow?.id,
+        values: getSafeFormSnapshot(data),
+        payload: {
+          ...basePayload,
+          allow_ips: basePayload.allow_ips ? '[redacted]' : '',
+          model_limits: basePayload.model_limits
+            ? `[${data.model_limits.length} models]`
+            : '',
+        },
+      })
 
       if (isUpdate && currentRow) {
         const result = await updateApiKey({
           ...basePayload,
           id: currentRow.id,
+        })
+        // eslint-disable-next-line no-console
+        console.info('[api-key-form] update response', {
+          tokenId: currentRow.id,
+          success: result.success,
+          message: result.message,
         })
         if (result.success) {
           toast.success(t(SUCCESS_MESSAGES.API_KEY_UPDATED))
@@ -237,7 +310,25 @@ export function ApiKeysMutateDrawer({
   }
 
   const onInvalid = (errors: FieldErrors<ApiKeyFormValues>) => {
-    toast.error(t('Please check the form and try again'))
+    const messages = collectFormErrorMessages(errors)
+    const firstMessage = messages[0]
+
+    // Keep this in production temporarily so online-only validation issues can
+    // be diagnosed without exposing API keys or IP values.
+    // eslint-disable-next-line no-console
+    console.warn('[api-key-form] validation failed', {
+      mode: isUpdate ? 'update' : 'create',
+      tokenId: currentRow?.id,
+      values: getSafeFormSnapshot(form.getValues()),
+      errors,
+      messages,
+    })
+
+    toast.error(
+      firstMessage
+        ? `${t('Please check the form and try again')}: ${firstMessage}`
+        : t('Please check the form and try again')
+    )
 
     const firstErrorName = Object.keys(errors)[0]
     if (!firstErrorName) return
