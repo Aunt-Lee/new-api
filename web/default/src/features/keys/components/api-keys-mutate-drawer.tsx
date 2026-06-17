@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useEffect, useState, type ReactNode } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -236,6 +236,18 @@ export function ApiKeysMutateDrawer({
     }
   }
 
+  const onInvalid = (errors: FieldErrors<ApiKeyFormValues>) => {
+    toast.error(t('Please check the form and try again'))
+
+    const firstErrorName = Object.keys(errors)[0]
+    if (!firstErrorName) return
+
+    requestAnimationFrame(() => {
+      const field = document.querySelector(`[name="${firstErrorName}"]`)
+      field?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+  }
+
   const handleSetExpiry = (months: number, days: number, hours: number) => {
     if (months === 0 && days === 0 && hours === 0) {
       form.setValue('expired_time', undefined)
@@ -288,7 +300,7 @@ export function ApiKeysMutateDrawer({
         <Form {...form}>
           <form
             id='api-key-form'
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={form.handleSubmit(onSubmit, onInvalid)}
             className='min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-3 py-3 sm:space-y-4 sm:px-4 sm:py-4'
           >
             <ApiKeyFormSection
