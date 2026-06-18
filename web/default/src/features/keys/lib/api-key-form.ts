@@ -25,17 +25,29 @@ import { type ApiKeyFormData, type ApiKey } from '../types'
 // Form Schema
 // ============================================================================
 
-export const apiKeyFormSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  remain_quota_dollars: z.number().min(0).optional(),
-  expired_time: z.date().optional(),
-  unlimited_quota: z.boolean(),
-  model_limits: z.array(z.string()),
-  allow_ips: z.string().optional(),
-  group: z.string().optional(),
-  cross_group_retry: z.boolean().optional(),
-  tokenCount: z.number().min(1).optional(),
-})
+export const apiKeyFormSchema = z
+  .object({
+    name: z.string().min(1, 'Name is required'),
+    remain_quota_dollars: z.number().optional(),
+    expired_time: z.date().optional(),
+    unlimited_quota: z.boolean(),
+    model_limits: z.array(z.string()),
+    allow_ips: z.string().optional(),
+    group: z.string().optional(),
+    cross_group_retry: z.boolean().optional(),
+    tokenCount: z.number().min(1).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.unlimited_quota) return
+
+    if ((data.remain_quota_dollars ?? 0) < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['remain_quota_dollars'],
+        message: 'Quota must be greater than or equal to 0',
+      })
+    }
+  })
 
 export type ApiKeyFormValues = z.infer<typeof apiKeyFormSchema>
 
@@ -100,7 +112,9 @@ export function transformApiKeyToFormDefaults(
 ): ApiKeyFormValues {
   return {
     name: apiKey.name,
-    remain_quota_dollars: quotaUnitsToDollars(apiKey.remain_quota),
+    remain_quota_dollars: apiKey.unlimited_quota
+      ? Math.max(0, quotaUnitsToDollars(apiKey.remain_quota))
+      : quotaUnitsToDollars(apiKey.remain_quota),
     expired_time:
       apiKey.expired_time > 0
         ? new Date(apiKey.expired_time * 1000)
