@@ -146,7 +146,7 @@ export const imageModelPricingConfig: ImageModelPricingConfig[] = [
  */
 export const pricingNoticeConfig = {
   // 公告文字内容
-  text: '新用户可以0.01元购买2元试用套餐，7天有效，累计消费满500可开发票',
+  text: '新用户可以0.1元购买1元试用套餐，7天有效，累计消费满500可开发票',
   linkText: '',
   linkUrl: '',
   // 是否显示公告
